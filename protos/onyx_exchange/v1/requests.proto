@@ -1,10 +1,10 @@
 syntax = "proto3";
 
-package onyx_exchange.protobuf;
+package onyx_exchange.v1;
 option csharp_namespace = "Onyx.Exchange";
 
-import "onyx_exchange/protobuf/common.proto";
-import "onyx_exchange/protobuf/types.proto";
+import "onyx_exchange/v1/common.proto";
+import "onyx_exchange/v1/types.proto";
 import "google/protobuf/timestamp.proto";
 
 

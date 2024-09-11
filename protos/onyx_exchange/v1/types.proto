@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package onyx_exchange.protobuf;
+package onyx_exchange.v1;
 option csharp_namespace = "Onyx.Exchange";
 
 

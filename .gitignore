@@ -2,7 +2,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 .venv
+.coverage
+coverage.xml
+htmlcov
 build
 
-onyx_exchange/protobuf/*
-!onyx_exchange/protobuf/__init__.py
+onyx_exchange/v1/*
+!onyx_exchange/v1/__init__.py

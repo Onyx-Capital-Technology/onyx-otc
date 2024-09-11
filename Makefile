@@ -7,17 +7,17 @@ help:
 
 
 .PHONY: build-python
-build-python:		## build python stubs
+compile-protos:		## compile protobuf python stubs
 	mkdir -p ./onyx_exchange/protobuf
 	poetry run python -m grpc_tools.protoc \
 		--proto_path=./protos \
 		--python_out=. \
-		./protos/onyx_exchange/protobuf/*.proto
+		./protos/onyx_exchange/v1/*.proto
 
 
 .PHONY: lint
 lint:			## lint protobuf definitions
-	@$(BUF) lint --path onyx_exchange/protos/v1
+	@cd protos && $(BUF) lint --path onyx_exchange
 
 .PHONY: install-buf
 install-buf:		## install buf protobuf tool in ~/bin
@@ -27,6 +27,9 @@ install-buf:		## install buf protobuf tool in ~/bin
 install:		## install python packages via poetry
 	poetry install --no-root
 
+.PHONY: test
+test: 				## run unit tests with poetry
+	@./.dev/test
 
 outdated:		## show outdated python packages
 	poetry show -o -a
