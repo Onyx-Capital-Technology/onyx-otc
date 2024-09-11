@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+package onyx_exchange.protobuf;
+option csharp_namespace = "Onyx.Exchange";
+
+import "onyx_exchange/protobuf/common.proto";
+import "onyx_exchange/protobuf/types.proto";
+import "google/protobuf/timestamp.proto";
+
+
+message NewOrder {
+  string client_order_id = 1;
+  string account_id = 2;
+  string symbol = 5;
+  Decimal quantity = 11;
+  Side side = 12;
+  OrderType order_type = 13;
+  optional Decimal price = 15;
+  optional Decimal stop_price = 21;
+  optional Decimal display_quantity = 22;
+  optional OrderTimeInForce time_in_force = 23;
+  optional google.protobuf.Timestamp expiration = 24;
+  optional bool manual = 25;
+}
+
+
+message UpdateOrder {
+  string client_order_id = 1;
+  string account_id = 2;
+  string order_id = 5;
+  Decimal quantity = 11;
+  optional Decimal price = 15;
+  optional Decimal display_quantity = 22;
+  optional bool manual = 25;
+}
+
+
+message CancelOrder {
+  string client_order_id = 1;
+  string account_id = 2;
+  string order_id = 5;
+}
+
+
+message CancelAllOrdersForAccount {
+  string account_id = 1;
+  optional string symbol = 2;
+}
+
+
+message CancelAllOrders {
+  optional string symbol = 1;
+}
+
+message AltTrading {
+  string symbol = 1;
+}
+
+message ResumeTrading {
+  string symbol = 1;
+}
+
+message ExchangeRequest {
+  string id = 1;
+  google.protobuf.Timestamp timestamp = 2;
+  oneof request {
+    NewOrder new_order = 11;
+    UpdateOrder update_order = 12;
+    CancelOrder cancel_order = 13;
+    CancelAllOrdersForAccount cancel_all_orders_for_account = 14;
+    CancelAllOrders cancel_all_orders = 15;
+  }
+}

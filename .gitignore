@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.venv
+build
+
+onyx_exchange/protobuf/*
+!onyx_exchange/protobuf/__init__.py

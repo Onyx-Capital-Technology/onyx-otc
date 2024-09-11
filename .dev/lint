@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -e
+
+BLACK_ARG="--check"
+RUFF_ARG=""
+
+if [ "$1" = "fix" ] ; then
+    BLACK_ARG=""
+    RUFF_ARG="--fix"
+fi
+
+echo "run black"
+black test.py onyx_api_client tests ${BLACK_ARG}
+echo "run ruff"
+ruff check test.py onyx_api_client tests ${RUFF_ARG}
+echo "run mypy"
+mypy onyx_api_client
