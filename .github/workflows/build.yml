@@ -23,12 +23,12 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install buf
-        uses: bufbuild/buf-setup-action@v1.40.1
+        run: make install-buf
       - name: Install poetry
         run: pip install -U pip poetry
       - name: Install dependencies
         run: make install
       - name: run lint
         run: make lint
-      - name: run compile-proto
-        run: make compile-proto
+      - name: run compile-protos
+        run: make compile-protos
