@@ -60,10 +60,16 @@ message ResumeTrading {
   string symbol = 1;
 }
 
+message Auth {
+  string id = 1;
+  string token = 2;
+}
+
 message ExchangeRequest {
   string id = 1;
   google.protobuf.Timestamp timestamp = 2;
   oneof request {
+    Auth auth = 10;
     NewOrder new_order = 11;
     UpdateOrder update_order = 12;
     CancelOrder cancel_order = 13;
