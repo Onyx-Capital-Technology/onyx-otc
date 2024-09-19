@@ -61,7 +61,6 @@ message ResumeTrading {
 }
 
 message Auth {
-  string id = 1;
   string token = 2;
 }
 
