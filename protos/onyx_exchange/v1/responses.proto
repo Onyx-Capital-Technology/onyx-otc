@@ -32,6 +32,13 @@ message Order {
   optional bool manual = 25;
 }
 
+message Subscription {
+  Channel channel = 1;
+  string symbol = 2;
+  Frequency frequency = 3;
+  SubscriptionStatus status = 4;
+}
+
 message ExchangeError {
   string message = 1;
   ExchangeErrorCode code = 2;
@@ -43,6 +50,7 @@ message ExchangeResponse {
   google.protobuf.Timestamp timestamp = 2;
   oneof response {
     Order order = 11;
+    Subscription subscription = 12;
   }
   optional ExchangeError error = 3;
 }
