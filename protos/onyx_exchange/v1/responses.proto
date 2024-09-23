@@ -7,10 +7,11 @@ import "onyx_exchange/v1/common.proto";
 import "onyx_exchange/v1/types.proto";
 import "google/protobuf/timestamp.proto";
 
-enum ErrorCode {
-  ERROR_CODE_UNSPECIFIED = 0;
-  ERROR_CODE_INVALID_REQUEST = 1;
-  ERROR_CODE_NOT_IMPLEMENTED = 2;
+enum ExchangeErrorCode {
+  EXCHANGE_ERROR_CODE_UNSPECIFIED = 0;
+  EXCHANGE_ERROR_CODE_INVALID_REQUEST = 1;
+  EXCHANGE_ERROR_CODE_NOT_IMPLEMENTED = 2;
+  EXCHANGE_ERROR_CODE_UNAUTHENTICATED = 3;
 }
 
 
@@ -31,9 +32,16 @@ message Order {
   optional bool manual = 25;
 }
 
-message Error {
+message Subscription {
+  Channel channel = 1;
+  string symbol = 2;
+  Frequency frequency = 3;
+  SubscriptionStatus status = 4;
+}
+
+message ExchangeError {
   string message = 1;
-  ErrorCode code = 2;
+  ExchangeErrorCode code = 2;
 }
 
 
@@ -42,6 +50,7 @@ message ExchangeResponse {
   google.protobuf.Timestamp timestamp = 2;
   oneof response {
     Order order = 11;
+    Subscription subscription = 12;
   }
-  optional Error error = 3;
+  optional ExchangeError error = 3;
 }

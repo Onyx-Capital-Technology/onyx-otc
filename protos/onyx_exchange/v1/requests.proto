@@ -60,14 +60,32 @@ message ResumeTrading {
   string symbol = 1;
 }
 
+message Auth {
+  string token = 2;
+}
+
+message Subscribe {
+  Channel channel = 1;
+  string symbol = 2;
+  Frequency frequency = 3;
+}
+
+message Unsubscribe {
+  Channel channel = 1;
+  string symbol = 2;
+}
+
 message ExchangeRequest {
   string id = 1;
   google.protobuf.Timestamp timestamp = 2;
   oneof request {
+    Auth auth = 10;
     NewOrder new_order = 11;
     UpdateOrder update_order = 12;
     CancelOrder cancel_order = 13;
     CancelAllOrdersForAccount cancel_all_orders_for_account = 14;
     CancelAllOrders cancel_all_orders = 15;
+    Subscribe subscribe = 16;
+    Unsubscribe unsubscribe = 17;
   }
 }
