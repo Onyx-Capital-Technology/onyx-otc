@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package otc.v1;
+option csharp_namespace = "Onyx.Otc";
+
+import "otc/v1/common.proto";
+import "otc/v1/types.proto";
+import "google/protobuf/timestamp.proto";
+
+
+message NewOrder {
+  string client_order_id = 1;
+  string account_id = 2;
+  string symbol = 5;
+  Decimal quantity = 11;
+  Side side = 12;
+  OrderType order_type = 13;
+  optional Decimal price = 15;
+  optional Decimal stop_price = 21;
+  optional Decimal display_quantity = 22;
+  optional OrderTimeInForce time_in_force = 23;
+  optional google.protobuf.Timestamp expiration = 24;
+  optional bool manual = 25;
+}
+
+
+
+message Auth {
+  string token = 2;
+}
+
+message Subscribe {
+  Channel channel = 1;
+  string symbol = 2;
+}
+
+message Unsubscribe {
+  Channel channel = 1;
+  string symbol = 2;
+}
+
+message OtcRequest {
+  string id = 1;
+  google.protobuf.Timestamp timestamp = 2;
+  oneof request {
+    Auth auth = 10;
+    Subscribe subscribe = 11;
+    Unsubscribe unsubscribe = 12;
+  }
+}

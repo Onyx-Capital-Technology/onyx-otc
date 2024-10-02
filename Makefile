@@ -8,17 +8,16 @@ help:
 
 .PHONY: build-python
 compile-protos:		## compile protobuf python stubs
-	mkdir -p ./onyx_exchange/protobuf
+	mkdir -p ./otc/protobuf
 	poetry run python -m grpc_tools.protoc \
 		--proto_path=./protos \
 		--python_out=. \
-		./protos/onyx_exchange/v1/*.proto
+		./protos/otc/v1/*.proto
 
 
 .PHONY: lint
 lint:			## lint protobuf definitions
-	@cd protos && $(BUF) lint --path onyx_exchange
-
+	@cd protos && $(BUF) lint --path otc
 .PHONY: install-buf
 install-buf:		## install buf protobuf tool in ~/bin
 	@./.dev/install-buf
