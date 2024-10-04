@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package otc.v1;
+option csharp_namespace = "Onyx.Otc";
+
+
+message Decimal {
+  string value = 1;
+}

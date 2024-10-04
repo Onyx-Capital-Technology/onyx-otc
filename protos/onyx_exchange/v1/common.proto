@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-package onyx_exchange.v1;
-option csharp_namespace = "Onyx.Exchange";
-
-
-message Decimal {
-  string value = 1;
-}
