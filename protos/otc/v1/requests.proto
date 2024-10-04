@@ -8,19 +8,14 @@ import "otc/v1/types.proto";
 import "google/protobuf/timestamp.proto";
 
 
-message NewOrder {
-  string client_order_id = 1;
+message NewOrderRequest {
+  optional string client_order_id = 1;
   string account_id = 2;
-  string symbol = 5;
+  TradableSymbol symbol = 5;
   Decimal quantity = 11;
   Side side = 12;
-  OrderType order_type = 13;
+  OrderType order_type = 14;
   optional Decimal price = 15;
-  optional Decimal stop_price = 21;
-  optional Decimal display_quantity = 22;
-  optional OrderTimeInForce time_in_force = 23;
-  optional google.protobuf.Timestamp expiration = 24;
-  optional bool manual = 25;
 }
 
 
@@ -42,9 +37,11 @@ message Unsubscribe {
 message OtcRequest {
   string id = 1;
   google.protobuf.Timestamp timestamp = 2;
+  Method method = 3;
   oneof request {
     Auth auth = 10;
     Subscribe subscribe = 11;
     Unsubscribe unsubscribe = 12;
+    NewOrderRequest order = 13;
   }
 }

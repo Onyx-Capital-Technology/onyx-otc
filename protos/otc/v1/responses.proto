@@ -8,6 +8,41 @@ import "otc/v1/types.proto";
 import "google/protobuf/timestamp.proto";
 
 
+message Trader {
+  string id = 1;
+  string account_name = 2;
+  string full_name = 3;
+  string email = 4;
+}
+
+message Fee {
+  string currency = 1;
+  Decimal signed_amount = 2;
+  Decimal rate = 3;
+}
+
+message Execution {
+  string id = 1;
+  string order_id = 2;
+  string client_order_id = 3;
+  string account_id = 4;
+  Exchange exchange = 5;
+  string symbol = 6;
+  Decimal amount = 7;
+  Decimal price = 8;
+  Side side = 9;
+  string exchange_execution_id = 10;
+  string correlation_id = 11;
+  uint64 report_id = 12;
+  google.protobuf.Timestamp exchange_timestamp = 13;
+  google.protobuf.Timestamp local_received_timestamp = 14;
+  optional google.protobuf.Timestamp reconciliation_timestamp = 15;
+  optional google.protobuf.Timestamp report_ack_timestamp = 16;
+  string eagle_trade_id = 17;
+  TradingGroup trading_group = 18;
+  Fee fee = 19;
+  Trader user = 20;
+}
 
 message Order {
   string order_id = 1;
@@ -19,11 +54,22 @@ message Order {
   Side side = 12;
   OrderType order_type = 13;
   optional Decimal price = 15;
-  optional Decimal stop_price = 21;
-  optional Decimal display_quantity = 22;
-  optional OrderTimeInForce time_in_force = 23;
-  optional google.protobuf.Timestamp expiration = 24;
-  optional bool manual = 25;
+  google.protobuf.Timestamp created_timestamp = 16;
+  google.protobuf.Timestamp exchange_created_timestamp = 17;
+  google.protobuf.Timestamp exchange_updated_timestamp = 18;
+  google.protobuf.Timestamp local_received_timestamp = 19;
+  optional Decimal executed_avg_price = 20;
+  optional Decimal executed_amount = 21;
+  string exchange_order_id = 22;
+  string exchange_order_state = 23;
+  TradingGroup trading_group = 24;
+  repeated Execution executions = 25;
+  uint32 duration_seconds = 26;
+  uint32 params_version = 27;
+  bool snapshot = 28;
+  uint64 update_id = 29;
+  bool must_complete = 30;
+  string adapter_order_id = 31;
 }
 
 message Subscription {
