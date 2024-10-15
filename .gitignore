@@ -7,5 +7,5 @@ coverage.xml
 htmlcov
 build
 
-onyx_exchange/v1/*
-!onyx_exchange/v1/__init__.py
+onyx_otc/v1/*
+!onyx_otc/v1/__init__.py

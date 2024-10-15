@@ -8,16 +8,16 @@ help:
 
 .PHONY: build-python
 compile-protos:		## compile protobuf python stubs
-	mkdir -p ./otc/protobuf
 	poetry run python -m grpc_tools.protoc \
 		--proto_path=./protos \
 		--python_out=. \
-		./protos/otc/v1/*.proto
+		./protos/onyx_otc/v1/*.proto
 
 
 .PHONY: lint
 lint:			## lint protobuf definitions
-	@cd protos && $(BUF) lint --path otc
+	@cd protos && $(BUF) lint --path onyx_otc
+
 .PHONY: install-buf
 install-buf:		## install buf protobuf tool in ~/bin
 	@./.dev/install-buf
@@ -27,7 +27,7 @@ install:		## install python packages via poetry
 	poetry install --no-root
 
 .PHONY: test
-test: 				## run unit tests with poetry
+test: 			## run unit tests with poetry
 	@./.dev/test
 
 outdated:		## show outdated python packages

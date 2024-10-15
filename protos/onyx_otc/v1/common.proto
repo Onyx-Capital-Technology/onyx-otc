@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package otc.v1;
+package onyx_otc.v1;
 option csharp_namespace = "Onyx.Otc";
 
 
