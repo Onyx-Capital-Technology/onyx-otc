@@ -90,6 +90,6 @@ message OtcResponse {
   oneof response {
     Order order = 11;
     Subscription subscription = 12;
+    OtcError error = 13;
   }
-  optional OtcError error = 3;
 }
