@@ -45,31 +45,34 @@ message Execution {
 }
 
 message Order {
-  string order_id = 1;
+  string id = 1;
   string client_order_id = 2;
-  string account_id = 3;
-  string symbol = 4;
-  google.protobuf.Timestamp last_updated_timestamp = 5;
-  Decimal quantity = 11;
-  Side side = 12;
-  OrderType order_type = 13;
-  optional Decimal price = 15;
-  google.protobuf.Timestamp created_timestamp = 16;
-  google.protobuf.Timestamp exchange_created_timestamp = 17;
-  google.protobuf.Timestamp exchange_updated_timestamp = 18;
-  google.protobuf.Timestamp local_received_timestamp = 19;
-  optional Decimal executed_avg_price = 20;
-  optional Decimal executed_amount = 21;
-  string exchange_order_id = 22;
-  string exchange_order_state = 23;
-  TradingGroup trading_group = 24;
-  repeated Execution executions = 25;
-  uint32 duration_seconds = 26;
-  uint32 params_version = 27;
-  bool snapshot = 28;
-  uint64 update_id = 29;
-  bool must_complete = 30;
-  string adapter_order_id = 31;
+  Trader user = 3;
+  string account_id = 4;
+  Exchange exchange = 5;
+  string product_symbol = 6;
+  TradableSymbol symbol = 7;
+  OrderType order_type =  10;
+  OrderState order_state = 11;
+  Decimal amount = 12;
+  optional Decimal price = 13;
+  Side side = 16;
+  google.protobuf.Timestamp created_timestamp = 17;
+  google.protobuf.Timestamp exchange_created_timestamp = 18;
+  google.protobuf.Timestamp exchange_updated_timestamp = 19;
+  google.protobuf.Timestamp local_received_timestamp = 20;
+  optional Decimal executed_avg_price = 21;
+  optional Decimal executed_amount = 22;
+  string exchange_order_id = 23;
+  string exchange_order_state = 24;
+  TradingGroup trading_group = 25;
+  repeated Execution executions = 26;
+  uint32 duration_seconds = 27;
+  uint32 params_version = 28;
+  bool snapshot = 29;
+  uint64 update_id = 30;
+  bool must_complete = 31;
+  string adapter_order_id = 32;
 }
 
 message Subscription {

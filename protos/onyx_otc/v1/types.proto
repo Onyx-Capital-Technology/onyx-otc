@@ -55,14 +55,6 @@ enum OrderState {
   ORDER_STATE_ERRORED = 10;
 }
 
-enum TradableSymbol {
-  TRADABLE_SYMBOL_UNSPECIFIED = 0;
-  TRADABLE_SYMBOL_FLAT = 1;
-  TRADABLE_SYMBOL_SPREAD = 2;
-  TRADABLE_SYMBOL_BUTTERFLY = 3;
-}
-
-
 enum TradingError {
   TRADING_ERROR_UNSPECIFIED = 0;
   TRADING_ERROR_FORBIDDEN = 403;
@@ -96,4 +88,23 @@ enum AlgoOrderMode {
   ALGO_ORDER_MODE_NORMAL = 1;
   ALGO_ORDER_MODE_AGGRESSIVE = 2;
   ALGO_ORDER_MODE_PASSIVE = 3;
+}
+
+message Spread {
+  string front = 1;
+  string back = 2;
+}
+
+message Butterfly {
+  string front = 1;
+  string middle = 2;
+  string back = 3;
+}
+
+message TradableSymbol {
+  oneof symbol {
+    string flat = 1;
+    Spread spread = 2;
+    Butterfly butterfly = 3;
+  }
 }
