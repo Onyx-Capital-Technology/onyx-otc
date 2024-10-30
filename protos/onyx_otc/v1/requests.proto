@@ -15,7 +15,8 @@ message NewOrderRequest {
   Decimal quantity = 11;
   Side side = 12;
   OrderType order_type = 14;
-  optional Decimal price = 15;
+  Decimal price = 15;
+  optional Exchange exchange = 16;
 }
 
 
