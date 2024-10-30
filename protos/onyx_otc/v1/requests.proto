@@ -11,7 +11,7 @@ import "google/protobuf/timestamp.proto";
 message NewOrderRequest {
   optional string client_order_id = 1;
   string account_id = 2;
-  TradableSymbol symbol = 5;
+  TradableSymbol symbol = 3;
   Decimal quantity = 11;
   Side side = 12;
   OrderType order_type = 14;
