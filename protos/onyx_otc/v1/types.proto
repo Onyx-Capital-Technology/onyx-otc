@@ -89,22 +89,3 @@ enum AlgoOrderMode {
   ALGO_ORDER_MODE_AGGRESSIVE = 2;
   ALGO_ORDER_MODE_PASSIVE = 3;
 }
-
-message Spread {
-  string front = 1;
-  string back = 2;
-}
-
-message Butterfly {
-  string front = 1;
-  string middle = 2;
-  string back = 3;
-}
-
-message TradableSymbol {
-  oneof symbol {
-    string flat = 1;
-    Spread spread = 2;
-    Butterfly butterfly = 3;
-  }
-}

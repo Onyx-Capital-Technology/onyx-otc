@@ -31,15 +31,7 @@ message Execution {
   Decimal amount = 7;
   Decimal price = 8;
   Side side = 9;
-  string exchange_execution_id = 10;
-  string correlation_id = 11;
-  uint64 report_id = 12;
-  google.protobuf.Timestamp exchange_timestamp = 13;
-  google.protobuf.Timestamp local_received_timestamp = 14;
-  optional google.protobuf.Timestamp reconciliation_timestamp = 15;
-  optional google.protobuf.Timestamp report_ack_timestamp = 16;
-  string eagle_trade_id = 17;
-  TradingGroup trading_group = 18;
+  google.protobuf.Timestamp created_timestamp = 13;
   Fee fee = 19;
   Trader user = 20;
 }
@@ -58,21 +50,9 @@ message Order {
   optional Decimal price = 13;
   Side side = 16;
   google.protobuf.Timestamp created_timestamp = 17;
-  google.protobuf.Timestamp exchange_created_timestamp = 18;
-  google.protobuf.Timestamp exchange_updated_timestamp = 19;
-  google.protobuf.Timestamp local_received_timestamp = 20;
   optional Decimal executed_avg_price = 21;
   optional Decimal executed_amount = 22;
-  string exchange_order_id = 23;
-  string exchange_order_state = 24;
-  TradingGroup trading_group = 25;
   repeated Execution executions = 26;
-  uint32 duration_seconds = 27;
-  uint32 params_version = 28;
-  bool snapshot = 29;
-  uint64 update_id = 30;
-  bool must_complete = 31;
-  string adapter_order_id = 32;
 }
 
 message Subscription {
