@@ -75,36 +75,3 @@ enum Channel {
   CHANNEL_UNSPECIFIED = 0;
   CHANNEL_ORDERS = 1;
 }
-
-enum TradingGroup {
-  TRADING_GROUP_UNSPECIFIED = 0;
-  TRADING_GROUP_OTC = 1;
-  TRADING_GROUP_OTC_CLIENT = 2;
-  TRADING_GROUP_EXCHANGE = 3;
-}
-
-enum AlgoOrderMode {
-  ALGO_ORDER_MODE_UNSPECIFIED = 0;
-  ALGO_ORDER_MODE_NORMAL = 1;
-  ALGO_ORDER_MODE_AGGRESSIVE = 2;
-  ALGO_ORDER_MODE_PASSIVE = 3;
-}
-
-message Spread {
-  string front = 1;
-  string back = 2;
-}
-
-message Butterfly {
-  string front = 1;
-  string middle = 2;
-  string back = 3;
-}
-
-message TradableSymbol {
-  oneof symbol {
-    string flat = 1;
-    Spread spread = 2;
-    Butterfly butterfly = 3;
-  }
-}
