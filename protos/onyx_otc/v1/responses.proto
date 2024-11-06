@@ -61,10 +61,6 @@ message Subscription {
   SubscriptionStatus status = 4;
 }
 
-message AuthResponse {
-  string message = 1;
-}
-
 message OtcError {
   string message = 1;
   OtcErrorCode code = 2;
@@ -77,7 +73,6 @@ message OtcResponse {
   oneof response {
     Order order = 11;
     Subscription subscription = 12;
-    AuthResponse auth = 14;
     OtcError error = 13;
   }
 }
