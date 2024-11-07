@@ -32,7 +32,7 @@ jobs:
       - name: Install dependencies
         run: make install
       - name: lint protobuf definitions
-        run: make lint
+        run: make lint-proto
       - name: run compile-protos
         run: make compile-protos
       - name: lint python code
