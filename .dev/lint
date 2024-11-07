@@ -10,8 +10,8 @@ if [ "$1" = "fix" ] ; then
 fi
 
 echo "run black"
-black test.py onyx_api_client tests ${BLACK_ARG}
+black onyx_otc tests ${BLACK_ARG}
 echo "run ruff"
-ruff check test.py onyx_api_client tests ${RUFF_ARG}
+ruff check onyx_otc tests ${RUFF_ARG}
 echo "run mypy"
-mypy onyx_api_client
+mypy onyx_otc tests

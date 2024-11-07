@@ -1,2 +1,1 @@
-# Onyx Exchange
-
+# Onyx OTC
