@@ -2,10 +2,11 @@ __pycache__/
 *.py[cod]
 *$py.class
 .venv
+.env
 .coverage
 coverage.xml
 htmlcov
 build
 
-onyx_otc/v1/*
-!onyx_otc/v1/__init__.py
+onyx_otc/v2/*
+!onyx_otc/v2/__init__.py
