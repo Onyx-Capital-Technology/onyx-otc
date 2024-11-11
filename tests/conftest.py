@@ -7,12 +7,12 @@ from onyx_otc.websocket import OnyxWebsocketClient
 from tests.utils import OnResponse
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def responses() -> OnResponse:
     return OnResponse()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 async def cli_no_auth(responses: OnResponse) -> AsyncIterator[OnyxWebsocketClient]:
     cli = OnyxWebsocketClient(
         api_token="",
@@ -32,12 +32,13 @@ async def cli_no_auth(responses: OnResponse) -> AsyncIterator[OnyxWebsocketClien
             pass
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 async def cli(responses: OnResponse):
     cli = OnyxWebsocketClient(
         on_response=responses.on_response,
         on_event=responses.on_event,
     )
+    assert cli.api_token
     read_task = asyncio.create_task(cli.run())
     # await for authentication
     await responses.get_response()

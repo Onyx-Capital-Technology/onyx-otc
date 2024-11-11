@@ -4,9 +4,12 @@ __pycache__/
 .venv
 .env
 .coverage
+.vscode
 coverage.xml
 htmlcov
 build
 
 onyx_otc/v2/*
 !onyx_otc/v2/__init__.py
+
+trading.py

@@ -1,9 +1,5 @@
-import pytest
-
 from onyx_otc.websocket import OnyxWebsocketClient
 from tests.utils import OnResponse
-
-pytestmark = pytest.mark.asyncio(loop_scope="module")
 
 
 async def test_no_auth(cli_no_auth: OnyxWebsocketClient, responses: OnResponse):
