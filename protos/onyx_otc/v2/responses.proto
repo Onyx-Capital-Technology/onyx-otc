@@ -57,7 +57,7 @@ message Order {
 
 message Subscription {
   Channel channel = 1;
-  string message = 2;
+  string symbol = 2;
   SubscriptionStatus status = 4;
 }
 
