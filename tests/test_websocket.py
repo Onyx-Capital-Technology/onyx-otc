@@ -11,11 +11,6 @@ async def test_no_auth(cli_no_auth: OnyxWebsocketClient, responses: OnResponse):
     )
 
 
-def test_with_auth(cli: OnyxWebsocketClient):
-    assert cli.ws_url
-    assert cli.api_token
-
-
 async def test_server_info(cli: OnyxWebsocketClient, responses: OnResponse):
     cli.subscribe("server_info")
     msg = await responses.get_response()

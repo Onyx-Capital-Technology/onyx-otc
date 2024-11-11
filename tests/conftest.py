@@ -38,6 +38,7 @@ async def cli(responses: OnResponse):
         on_response=responses.on_response,
         on_event=responses.on_event,
     )
+    assert cli.api_token
     read_task = asyncio.create_task(cli.run())
     # await for authentication
     await responses.get_response()
