@@ -75,4 +75,7 @@ enum TradingError {
 enum Channel {
   CHANNEL_UNSPECIFIED = 0;
   CHANNEL_ORDERS = 1;
+  CHANNEL_SERVER_INFO = 2;
+  CHANNEL_TICKERS = 3;
+  CHANNEL_RFQ = 4;
 }
