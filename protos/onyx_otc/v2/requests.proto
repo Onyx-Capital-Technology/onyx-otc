@@ -19,20 +19,38 @@ message NewOrderRequest {
   optional Exchange exchange = 16;
 }
 
+message TickersChannel {
+  repeated string products = 1;
+}
 
+message RfqChannel {
+  TradableSymbol symbol = 1;
+  Decimal size = 2;
+  optional Exchange exchange = 3;
+}
+message ServerInfoChannel {}
+message OrdersChannel {}
 
 message Auth {
   string token = 2;
 }
 
 message Subscribe {
-  Channel channel = 1;
-  string symbol = 2;
+  oneof channel {
+    ServerInfoChannel server_info = 1;
+    OrdersChannel orders = 2;
+    TickersChannel tickers = 3;
+    RfqChannel rfq_channel = 4;
+  }
 }
 
 message Unsubscribe {
-  Channel channel = 1;
-  string symbol = 2;
+  oneof channel {
+    ServerInfoChannel server_info = 1;
+    OrdersChannel orders = 2;
+    TickersChannel tickers = 3;
+    RfqChannel rfq_channel = 4;
+  }
 }
 
 message OtcRequest {
