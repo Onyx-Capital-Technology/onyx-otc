@@ -58,7 +58,7 @@ message Order {
 message Subscription {
   Channel channel = 1;
   string message = 2;
-  SubscriptionStatus status = 4;
+  SubscriptionStatus status = 3;
 }
 
 message AuthResponse {
