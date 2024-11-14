@@ -3,7 +3,6 @@ syntax = "proto3";
 package onyx_otc.v2;
 option csharp_namespace = "Onyx.Otc";
 
-
 message Decimal {
   string value = 1;
 }
@@ -26,3 +25,4 @@ message TradableSymbol {
     Butterfly butterfly = 3;
   }
 }
+

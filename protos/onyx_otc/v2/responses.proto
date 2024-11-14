@@ -15,6 +15,15 @@ message Trader {
   string email = 4;
 }
 
+message Ticker {
+  string symbol = 1;
+  google.protobuf.Timestamp timestamp = 2;
+  Decimal mid = 3;
+  Decimal full_price = 4;
+  Decimal accrued_price = 5;
+  string product_symbol = 6;
+}
+
 message Fee {
   string currency = 1;
   Decimal signed_amount = 2;
@@ -36,6 +45,30 @@ message Execution {
   Trader user = 20;
 }
 
+message Tickers {
+  repeated Ticker tickers = 1;
+}
+
+message ServerInfo {
+  string socket_uid = 1;
+  int64 age_millis = 2;
+}
+
+message OtcQuoteSide {
+  Decimal price = 1;
+  Decimal amount = 2;
+}
+
+message OtcQuote {
+  TradableSymbol symbol = 1;
+  Exchange exchange = 2;
+  OtcQuoteSide buy = 3;
+  OtcQuoteSide sell = 4;
+  Decimal mid =  5;
+  google.protobuf.Timestamp timestamp = 6;
+  string product_symbol = 7;
+}
+
 message Order {
   string id = 1;
   string client_order_id = 2;
@@ -53,6 +86,17 @@ message Order {
   optional Decimal executed_avg_price = 21;
   optional Decimal executed_amount = 22;
   repeated Execution executions = 26;
+}
+
+message ChannelMessage {
+  Channel channel = 1;
+  google.protobuf.Timestamp timestamp = 2;
+  oneof message {
+    Order order = 8;
+    ServerInfo server_info = 9;
+    Tickers tickers = 10;
+    OtcQuote otc_quote = 11;
+  }
 }
 
 message Subscription {
