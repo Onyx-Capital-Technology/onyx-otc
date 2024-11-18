@@ -4,12 +4,18 @@ from typing import AsyncIterator
 import pytest
 
 from onyx_otc.websocket import OnyxWebsocketClient
-from tests.utils import OnResponse
+from onyx_otc.websocket_v2 import OnyxWebsocketClientV2
+from tests.utils import OnResponse, OnResponseV2
 
 
 @pytest.fixture
 def responses() -> OnResponse:
     return OnResponse()
+
+
+@pytest.fixture
+def responsesv2() -> OnResponseV2:
+    return OnResponseV2()
 
 
 @pytest.fixture
@@ -42,6 +48,27 @@ async def cli(responses: OnResponse):
     read_task = asyncio.create_task(cli.run())
     # await for authentication
     await responses.get_response()
+    try:
+        yield cli
+    finally:
+        read_task.cancel()
+        try:
+            await read_task
+        except asyncio.CancelledError:
+            pass
+
+
+@pytest.fixture
+async def cliv2(responsesv2: OnResponseV2):
+    cli = OnyxWebsocketClientV2(
+        api_token="cafc8483ea8d4cda8c2aac802e6921a6",
+        ws_url="wss://ws.dev.onyxhub.co/stream/v2/binary",
+        on_response=responsesv2.on_response,
+        on_event=responsesv2.on_event,
+    )
+    assert cli.api_token
+    read_task = asyncio.create_task(cli.connect())
+    await responsesv2.get_otc_response()
     try:
         yield cli
     finally:

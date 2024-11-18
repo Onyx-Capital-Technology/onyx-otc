@@ -132,12 +132,3 @@ class OnyxWebsocketClient:
         async with asyncio.timeout(timeout):
             while not self._ws:
                 await asyncio.sleep(0.01)
-
-
-@dataclass
-class OnyxWebsocketClientV2(OnyxWebsocketClient):
-    ws_url: str = field(
-        default_factory=lambda: os.getenv(
-            "ONYX_WS_V2_URL", "wss://ws.onyxhub.co/stream/v2"
-        )
-    )
