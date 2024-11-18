@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "onyx-exchange"
+name = "onyx-otc"
 version = "0.1.0"
-description = "Onyx exchange python client and documentation"
+description = "Onyx otc python client and documentation"
 authors = ["lsbardel <lsbardella@onyxcapitaltechnology.com>"]
 readme = "readme.md"
 
