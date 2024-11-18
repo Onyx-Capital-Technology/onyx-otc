@@ -10,8 +10,8 @@ from typing import Any, Callable, TypeAlias
 from aiohttp import ClientSession, ClientWebSocketResponse, WSMsgType
 from google.protobuf.timestamp_pb2 import Timestamp
 
-from onyx_otc.v2.common_pb2 import Decimal, TradableSymbol
-from onyx_otc.v2.requests_pb2 import (
+from .v2.common_pb2 import Decimal, TradableSymbol
+from .v2.requests_pb2 import (
     Auth,
     OrdersChannel,
     OtcRequest,
@@ -19,9 +19,10 @@ from onyx_otc.v2.requests_pb2 import (
     ServerInfoChannel,
     Subscribe,
     TickersChannel,
+    Unsubscribe,
 )
-from onyx_otc.v2.responses_pb2 import ChannelMessage, OtcResponse
-from onyx_otc.v2.types_pb2 import Exchange, Method
+from .v2.responses_pb2 import ChannelMessage, OtcResponse
+from .v2.types_pb2 import Exchange, Method
 
 logger = logging.getLogger(__name__)
 
@@ -92,8 +93,7 @@ class OnyxWebsocketClientV2:
     def parse_response(self, data: bytes) -> OtcResponse | None:
         """Parse binary data as OtcResponse."""
         try:
-            response = OtcResponse()
-            response.ParseFromString(data)
+            response = OtcResponse.FromString(data)
 
             if (
                 response.HasField("error")
@@ -110,12 +110,11 @@ class OnyxWebsocketClientV2:
     def parse_channel_message(self, data: bytes) -> ChannelMessage | None:
         """Parse binary data as ChannelMessage."""
         try:
-            message = ChannelMessage()
-            message.ParseFromString(data)
+            message = ChannelMessage.FromString(data)
             return message
         except Exception:
-            logger.debug("Failed to parse as ChannelMessage", exc_info=True)
-            return None
+            logger.error("Failed to parse as ChannelMessage", exc_info=True)
+            raise
 
     def subscribe_server_info(self) -> None:
         """Subscribe to server info channel."""
@@ -123,6 +122,15 @@ class OnyxWebsocketClientV2:
             self._create_request(
                 method=Method.METHOD_SUBSCRIBE,
                 subscribe=Subscribe(server_info=ServerInfoChannel()),
+            )
+        )
+
+    def unsubscribe_server_info(self) -> None:
+        """Unsubscribe from server info channel."""
+        self.send(
+            self._create_request(
+                method=Method.METHOD_UNSUBSCRIBE,
+                unsubscribe=Unsubscribe(server_info=ServerInfoChannel()),
             )
         )
 
@@ -135,12 +143,30 @@ class OnyxWebsocketClientV2:
             )
         )
 
+    def unsubscribe_tickers(self, products: list[str]) -> None:
+        """Unsubscribe from ticker updates for specific products."""
+        self.send(
+            self._create_request(
+                method=Method.METHOD_UNSUBSCRIBE,
+                unsubscribe=Unsubscribe(tickers=TickersChannel(products=products)),
+            )
+        )
+
     def subscribe_orders(self) -> None:
         """Subscribe to order updates."""
         self.send(
             self._create_request(
                 method=Method.METHOD_SUBSCRIBE,
                 subscribe=Subscribe(orders=OrdersChannel()),
+            )
+        )
+
+    def unsubscribe_orders(self) -> None:
+        """Unsubscribe from order updates."""
+        self.send(
+            self._create_request(
+                method=Method.METHOD_UNSUBSCRIBE,
+                unsubscribe=Unsubscribe(orders=OrdersChannel()),
             )
         )
 

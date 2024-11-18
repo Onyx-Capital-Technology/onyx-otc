@@ -61,8 +61,6 @@ async def cli(responses: OnResponse):
 @pytest.fixture
 async def cliv2(responsesv2: OnResponseV2):
     cli = OnyxWebsocketClientV2(
-        api_token="cafc8483ea8d4cda8c2aac802e6921a6",
-        ws_url="wss://ws.dev.onyxhub.co/stream/v2/binary",
         on_response=responsesv2.on_response,
         on_event=responsesv2.on_event,
     )
