@@ -56,6 +56,8 @@ async def cli(responses: OnResponse):
             await read_task
         except asyncio.CancelledError:
             pass
+    # sleep to prevent connection limit exceeded
+    await asyncio.sleep(0.6)
 
 
 @pytest.fixture

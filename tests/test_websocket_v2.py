@@ -1,14 +1,9 @@
-import pytest
 
 from onyx_otc.v2.types_pb2 import Channel, OtcErrorCode, SubscriptionStatus
 from onyx_otc.websocket_v2 import OnyxWebsocketClientV2
 from tests.utils import OnResponseV2
 
 
-@pytest.mark.skip(reason="skip until promoted to UAT")
-@pytest.mark.description(
-    "Test that a server info subscription and unsubscription works"
-)
 async def test_server_info_subscribe_unsubscribe(
     cliv2: OnyxWebsocketClientV2, responsesv2: OnResponseV2
 ) -> None:
@@ -46,10 +41,6 @@ async def test_server_info_subscribe_unsubscribe(
     assert unsubscription.status == SubscriptionStatus.SUBSCRIPTION_STATUS_UNSUBSCRIBED
 
 
-@pytest.mark.skip(reason="skip until promoted to UAT")
-@pytest.mark.description(
-    "Test that a forbidden error is returned when the product does not exist"
-)
 async def test_tickers_error_forbidden(
     cliv2: OnyxWebsocketClientV2, responsesv2: OnResponseV2
 ) -> None:
@@ -68,11 +59,6 @@ async def test_tickers_error_forbidden(
     )
 
 
-@pytest.mark.skip(reason="skip until promoted to UAT")
-@pytest.mark.description(
-    "Test that an invalid request error is returned when no products \
-    are specified to subscribe"
-)
 async def test_tickers_error_invalid_request(
     cliv2: OnyxWebsocketClientV2, responsesv2: OnResponseV2
 ) -> None:

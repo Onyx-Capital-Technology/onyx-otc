@@ -74,7 +74,7 @@ async def one_client():
         server_info=True,
         snapshots=True,
         # tickers=set(["cfd09u2413u24"]),
-        # products=["brt"],
+        products=["gasarb"],
     )
     try:
         await test_websocket(workflow)
