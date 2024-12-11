@@ -1,5 +1,6 @@
 
-from onyx_otc.v2.types_pb2 import Channel, OtcErrorCode, SubscriptionStatus
+from onyx_otc.v2.common_pb2 import Decimal, TradableSymbol
+from onyx_otc.v2.types_pb2 import Channel, Exchange, OtcErrorCode, SubscriptionStatus
 from onyx_otc.websocket_v2 import OnyxWebsocketClientV2
 from tests.utils import OnResponseV2
 
@@ -73,3 +74,27 @@ async def test_tickers_error_invalid_request(
     error = response.error
     assert error.code == OtcErrorCode.OTC_ERROR_CODE_INVALID_REQUEST
     assert error.message == "no products specified to subscribe to on tickers channel"
+
+async def test_rfq_subscribe(cliv2: OnyxWebsocketClientV2, responsesv2: OnResponseV2) -> None:
+
+    # Setup Test
+    cliv2.subscribe_rfq(
+        symbol=TradableSymbol(flat="brtg25"),
+        size=Decimal(value="1"),
+        exchange=Exchange.EXCHANGE_ICE,
+    )
+
+    response = await responsesv2.get_otc_response()
+
+    assert response.subscription.channel == Channel.CHANNEL_RFQ
+    assert response.subscription.status == SubscriptionStatus.SUBSCRIPTION_STATUS_SUBSCRIBED
+    assert response.subscription.message == "subscribed to rfq stream for brtg25 on ice and amount 1"
+
+    event = await responsesv2.get_otc_event()
+
+    assert event.channel == Channel.CHANNEL_RFQ
+    assert event.otc_quote.symbol == TradableSymbol(flat="brtg25")
+    assert event.otc_quote.exchange == Exchange.EXCHANGE_ICE
+
+
+
