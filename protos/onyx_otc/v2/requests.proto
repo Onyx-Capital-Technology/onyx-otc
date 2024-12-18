@@ -28,6 +28,12 @@ message RfqChannel {
   Decimal size = 2;
   optional Exchange exchange = 3;
 }
+
+message OrderBookTopChannel {
+  repeated TradableSymbol symbols = 1;
+  Exchange exchange = 2;
+}
+
 message ServerInfoChannel {}
 message OrdersChannel {}
 
@@ -41,6 +47,7 @@ message Subscribe {
     OrdersChannel orders = 2;
     TickersChannel tickers = 3;
     RfqChannel rfq_channel = 4;
+    OrderBookTopChannel order_book_top = 5;
   }
 }
 
@@ -50,6 +57,7 @@ message Unsubscribe {
     OrdersChannel orders = 2;
     TickersChannel tickers = 3;
     RfqChannel rfq_channel = 4;
+    OrderBookTopChannel order_book_top = 5;
   }
 }
 

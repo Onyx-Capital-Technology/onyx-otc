@@ -15,6 +15,12 @@ message Trader {
   string email = 4;
 }
 
+
+message PriceAmount {
+  Decimal price = 1;
+  Decimal amount = 2;
+}
+
 message Ticker {
   string symbol = 1;
   google.protobuf.Timestamp timestamp = 2;
@@ -69,6 +75,18 @@ message OtcQuote {
   string product_symbol = 7;
 }
 
+message OrderBookTop {
+  PriceAmount buy = 1;
+  PriceAmount sell = 2;
+  Exchange exchange = 3;
+  string symbol = 4;
+  google.protobuf.Timestamp timestamp = 5;
+}
+
+message OrderBookTops {
+  repeated OrderBookTop order_book_tops = 1;
+}
+
 message Order {
   string id = 1;
   string client_order_id = 2;
@@ -96,6 +114,7 @@ message ChannelMessage {
     ServerInfo server_info = 9;
     Tickers tickers = 10;
     OtcQuote otc_quote = 11;
+    OrderBookTops order_book_tops = 12;
   }
 }
 
