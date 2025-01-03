@@ -30,8 +30,7 @@ message RfqChannel {
 }
 
 message OrderBookTopChannel {
-  repeated TradableSymbol symbols = 1;
-  Exchange exchange = 2;
+  repeated string products = 1;
 }
 
 message ServerInfoChannel {}
