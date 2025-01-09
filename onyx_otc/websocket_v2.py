@@ -116,23 +116,23 @@ class OnyxWebsocketClientV2:
             logger.error("Failed to parse as ChannelMessage", exc_info=True)
             raise
 
-    def subscribe_server_info(self) -> None:
+    def subscribe_server_info(self) -> OtcRequest:
         """Subscribe to server info channel."""
-        self.send(
-            self._create_request(
-                method=Method.METHOD_SUBSCRIBE,
-                subscribe=Subscribe(server_info=ServerInfoChannel()),
-            )
+        request = self._create_request(
+            method=Method.METHOD_SUBSCRIBE,
+            subscribe=Subscribe(server_info=ServerInfoChannel()),
         )
+        self.send(request)
+        return request
 
-    def unsubscribe_server_info(self) -> None:
+    def unsubscribe_server_info(self) -> OtcRequest:
         """Unsubscribe from server info channel."""
-        self.send(
-            self._create_request(
-                method=Method.METHOD_UNSUBSCRIBE,
-                unsubscribe=Unsubscribe(server_info=ServerInfoChannel()),
-            )
+        request = self._create_request(
+            method=Method.METHOD_UNSUBSCRIBE,
+            unsubscribe=Unsubscribe(server_info=ServerInfoChannel()),
         )
+        self.send(request)
+        return request
 
     def subscribe_tickers(self, products: list[str]) -> None:
         """Subscribe to ticker updates for specific products."""
