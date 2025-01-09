@@ -68,7 +68,7 @@ async def cliv2(responsesv2: OnResponseV2):
     )
     assert cli.api_token
     read_task = asyncio.create_task(cli.connect())
-    await responsesv2.get_otc_response()
+    await responsesv2.assert_otc_response(predicate=lambda _: True)
     try:
         yield cli
     finally:

@@ -1,5 +1,6 @@
 import asyncio
 from dataclasses import dataclass, field
+from typing import Callable
 
 from onyx_otc.v2.responses_pb2 import ChannelMessage, OtcResponse
 from onyx_otc.websocket import OnyxWebsocketClient
@@ -37,10 +38,27 @@ class OnResponseV2:
     def on_event(self, client: OnyxWebsocketClientV2, event: ChannelMessage) -> None:
         self.events.put_nowait(event)
 
-    async def get_otc_response(self, timeout: float = 2.0) -> OtcResponse:
+    async def assert_otc_response(
+        self, predicate: Callable[[OtcResponse], bool], timeout: float = 2.0
+    ) -> None:
         async with asyncio.timeout(timeout):
-            return await self.responses.get()
+            while True:
+                response = await self.responses.get()
+                if predicate(response):
+                    return
+                await self.responses.put(response)
 
-    async def get_otc_event(self, timeout: float = 2.0) -> ChannelMessage:
+    async def assert_otc_event(
+        self, predicate: Callable[[ChannelMessage], bool], timeout: float = 2.0
+    ) -> None:
         async with asyncio.timeout(timeout):
-            return await self.events.get()
+            while True:
+                event = await self.events.get()
+                if predicate(event):
+                    return
+                await self.events.put(event)
+
+
+def assert_server_info_message(channel_message: ChannelMessage) -> bool:
+    server_info_message = channel_message.server_info
+    return server_info_message.socket_uid != "" and server_info_message.age_millis > 0
