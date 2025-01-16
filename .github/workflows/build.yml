@@ -40,3 +40,23 @@ jobs:
         run: make lint-py-check
       - name: run tests
         run: make test
+
+  publish:
+    runs-on: ubuntu-latest
+    environment: uat
+    env:
+      PYTHON_ENV: ci
+    if: ${{ github.ref == 'refs/heads/main' && github.event.head_commit.message == 'release' }}
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.13"
+      - name: Install poetry
+        run: pip install -U pip poetry
+      - name: Install dependencies
+        run: make install
+      - name: run compile-protos
+        run: make compile-protos
