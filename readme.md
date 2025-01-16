@@ -7,3 +7,5 @@
 * [Onyx Flux web app](https://www.onyxcapitalgroup.com/flux)
 
 ## Websocket API v2
+
+The websocket API v2 support both JSON and protobuf (binary) encoding. The protobuf encoding is more efficient and faster than JSON encoding.
