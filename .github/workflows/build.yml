@@ -44,11 +44,9 @@ jobs:
   publish:
     name: publish to pypi
     runs-on: ubuntu-latest
-    environment:
-      name: pypi
-      url: https://pypi.org/p/onyx-otc
+    environment: pypi
     permissions:
-      id-token: write
+      id-token: write # IMPORTANT: mandatory for trusted publishing
     needs:
       - build
     env:
@@ -76,5 +74,5 @@ jobs:
         with:
           name: python-package-distributions
           path: dist/
-      - name: publish package
-        run: poetry publish
+      - name: Publish distribution 📦 to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
