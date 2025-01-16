@@ -5,6 +5,10 @@ description = "Onyx otc python client and documentation"
 authors = ["lsbardel <lsbardella@onyxcapitaltechnology.com>"]
 readme = "readme.md"
 
+[tool.poetry.urls]
+Homepage = "https://github.com/Onyx-Capital-Technology/onyx-otc"
+Repository = "https://github.com/Onyx-Capital-Technology/onyx-otc"
+
 [tool.poetry.dependencies]
 python = "^3.11"
 protobuf = "^5.27.2"
