@@ -9,6 +9,7 @@ coverage.xml
 htmlcov
 build
 dist
+requirements.txt
 
 onyx_otc/v2/*
 !onyx_otc/v2/__init__.py
