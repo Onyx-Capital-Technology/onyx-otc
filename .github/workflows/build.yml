@@ -21,9 +21,9 @@ jobs:
         python-version: ["3.11", "3.12", "3.13"]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install buf
@@ -44,14 +44,18 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     environment: uat
+    needs:
+      - build
     env:
       PYTHON_ENV: ci
     if: ${{ github.ref == 'refs/heads/main' && github.event.head_commit.message == 'release' }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Set up Python 3.13
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v5
         with:
           python-version: "3.13"
       - name: Install poetry
@@ -60,5 +64,12 @@ jobs:
         run: make install
       - name: run compile-protos
         run: make compile-protos
+      - name: build
+        run: poetry build
+      - name: Store the distribution packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
       - name: publish package
-        run: poetry publish --build
+        run: poetry publish

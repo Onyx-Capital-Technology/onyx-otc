@@ -8,6 +8,7 @@ __pycache__/
 coverage.xml
 htmlcov
 build
+dist
 
 onyx_otc/v2/*
 !onyx_otc/v2/__init__.py
