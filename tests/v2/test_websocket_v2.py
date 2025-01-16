@@ -1,7 +1,7 @@
-
 from onyx_otc.v2.types_pb2 import Channel, OtcErrorCode, SubscriptionStatus
 from onyx_otc.websocket_v2 import OnyxWebsocketClientV2
-from tests.utils import OnResponseV2
+
+from .utils import OnResponseV2
 
 
 async def test_server_info_subscribe_unsubscribe(

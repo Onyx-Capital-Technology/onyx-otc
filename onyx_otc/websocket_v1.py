@@ -11,20 +11,20 @@ from aiohttp import ClientSession, ClientWebSocketResponse, WSMsgType
 logger = logging.getLogger(__name__)
 
 
-def on_response(cli: OnyxWebsocketClient, data: dict) -> None:
+def on_response(cli: OnyxWebsocketClientV1, data: dict) -> None:
     logger.info("received response: %s", data)
 
 
-def on_event(cli: OnyxWebsocketClient, data: dict) -> None:
+def on_event(cli: OnyxWebsocketClientV1, data: dict) -> None:
     logger.info("received event: %s", data)
 
 
-def on_exit(cli: OnyxWebsocketClient) -> None:
+def on_exit(cli: OnyxWebsocketClientV1) -> None:
     logger.info("received exit event")
 
 
 @dataclass
-class OnyxWebsocketClient:
+class OnyxWebsocketClientV1:
     api_token: str = field(default_factory=lambda: os.getenv("ONYX_API_TOKEN", ""))
     ws_url: str = field(
         default_factory=lambda: os.getenv(

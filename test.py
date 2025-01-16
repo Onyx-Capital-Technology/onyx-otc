@@ -8,7 +8,7 @@ from typing import NamedTuple
 
 import dotenv
 
-from onyx_otc.websocket import OnyxWebsocketClient
+from onyx_otc.websocket_v1 import OnyxWebsocketClient
 
 logger = logging.getLogger(__name__)
 
