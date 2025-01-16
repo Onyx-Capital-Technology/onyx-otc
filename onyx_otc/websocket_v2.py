@@ -61,7 +61,7 @@ class OnyxWebsocketClientV2:
     api_token: str = field(default_factory=lambda: os.environ.get("ONYX_API_TOKEN", ""))
     ws_url: str = field(
         default_factory=lambda: os.environ.get(
-            "ONYX_WS_V2_URL", "wss://ws.dev.onyxhub.co/stream/v2/binary"
+            "ONYX_WS_V2_URL", "wss://ws.onyxhub.co/stream/v2/binary"
         )
     )
 
