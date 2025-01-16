@@ -42,13 +42,14 @@ jobs:
         run: make test
 
   publish:
+    name: publish to pypi
     runs-on: ubuntu-latest
     environment: uat
+    permissions:
+      id-token: write
+      contents: write
     needs:
       - build
-    permissions:
-      contents: write  # IMPORTANT: mandatory for making GitHub Releases
-      id-token: write  # IMPORTANT: mandatory for trusted publishing
     env:
       PYTHON_ENV: ci
     if: ${{ github.ref == 'refs/heads/main' && github.event.head_commit.message == 'release' }}
