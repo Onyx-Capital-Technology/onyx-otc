@@ -23,6 +23,10 @@ install-buf:		## install buf protobuf tool in ~/bin
 install:		## install python packages via poetry
 	poetry install --no-root
 
+.PHONY: install-all
+install-all:		## install python all packages via poetry
+	poetry install --all-extras --with docs --no-root
+
 .PHONY: lint-proto
 lint-proto:		## lint protobuf definitions
 	@cd protos && $(BUF) lint --path onyx_otc
@@ -41,3 +45,15 @@ test: 			## run unit tests with poetry
 
 outdated:		## show outdated python packages
 	poetry show -o -a
+
+.PHONY: docs
+docs:			## build documentation
+	@poetry run mkdocs build
+
+.PHONY: docs-publish
+docs-publish:		## publish the book to github pages
+	poetry run mkdocs gh-deploy
+
+.PHONY: docs-serve
+docs-serve:		## serve documentation
+	@poetry run mkdocs serve --watch onyx_otc

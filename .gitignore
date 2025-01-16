@@ -9,6 +9,7 @@ coverage.xml
 htmlcov
 build
 dist
+site
 requirements.txt
 
 onyx_otc/v2/*

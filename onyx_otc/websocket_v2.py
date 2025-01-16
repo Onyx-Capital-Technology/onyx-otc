@@ -48,6 +48,7 @@ def on_exit(cli: OnyxWebsocketClientV2) -> None:
 class OnyxWebsocketClientV2:
     """
     WebSocket client for the Onyx OTC API v2.
+
     This clients connects to the API v2 binary WebSocket endpoint
 
     Attributes:
@@ -69,7 +70,7 @@ class OnyxWebsocketClientV2:
     on_event: EventHandler = field(default=on_event)
     on_exit: ExitHandler = field(default=on_exit)
 
-    _queue: asyncio.Queue[OtcRequest] = field(default_factory=asyncio.Queue)
+    _queue: asyncio.Queue[OtcRequest] = field(default_factory=asyncio.Queue, repr=False)
     _ws: ClientWebSocketResponse | None = field(default=None, init=False)
     _write_task: asyncio.Task | None = field(default=None, init=False)
     _is_running: bool = field(default=False, init=False)
