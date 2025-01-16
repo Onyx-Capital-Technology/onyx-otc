@@ -44,10 +44,11 @@ jobs:
   publish:
     name: publish to pypi
     runs-on: ubuntu-latest
-    environment: uat
+    environment:
+      name: pypi
+      url: https://pypi.org/p/onyx-otc
     permissions:
       id-token: write
-      contents: write
     needs:
       - build
     env:
