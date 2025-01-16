@@ -1,9 +1,13 @@
 [tool.poetry]
 name = "onyx-otc"
-version = "0.1.0"
+version = "0.1.1"
 description = "Onyx otc python client and documentation"
 authors = ["lsbardel <lsbardella@onyxcapitaltechnology.com>"]
 readme = "readme.md"
+include = [
+    "onyx_otc/*",
+    "onyx_otc/v2/*"
+]
 
 [tool.poetry.urls]
 Homepage = "https://github.com/Onyx-Capital-Technology/onyx-otc"
