@@ -60,3 +60,5 @@ jobs:
         run: make install
       - name: run compile-protos
         run: make compile-protos
+      - name: publish package
+        run: poetry publish --build
