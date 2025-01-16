@@ -1,8 +1,9 @@
-from onyx_otc.websocket import OnyxWebsocketClient
-from tests.utils import OnResponse
+from onyx_otc.websocket_v1 import OnyxWebsocketClientV1
+
+from .utils import OnResponseV1
 
 
-async def test_no_auth(cli_no_auth: OnyxWebsocketClient, responses: OnResponse):
+async def test_no_auth(cli_no_auth: OnyxWebsocketClientV1, responses: OnResponseV1):
     cli_no_auth.subscribe("server_info")
     msg = await responses.get_response(3.0)
     assert msg["method"] == "subscribe"
@@ -11,7 +12,7 @@ async def test_no_auth(cli_no_auth: OnyxWebsocketClient, responses: OnResponse):
     )
 
 
-async def test_server_info(cli: OnyxWebsocketClient, responses: OnResponse):
+async def test_server_info(cli: OnyxWebsocketClientV1, responses: OnResponseV1):
     cli.subscribe("server_info")
     msg = await responses.get_response()
     assert msg["method"] == "subscribe"
@@ -30,7 +31,7 @@ async def test_server_info(cli: OnyxWebsocketClient, responses: OnResponse):
     assert msg["message"] == dict(Message="not subscribed to server_info")
 
 
-async def test_dashboards(cli: OnyxWebsocketClient, responses: OnResponse):
+async def test_dashboards(cli: OnyxWebsocketClientV1, responses: OnResponseV1):
     cli.subscribe("dashboards")
     msg = await responses.get_response()
     assert msg["method"] == "subscribe"
@@ -50,7 +51,7 @@ async def test_dashboards(cli: OnyxWebsocketClient, responses: OnResponse):
     assert msg["message"] == dict(Message="unsubscribed from dashboards")
 
 
-async def test_tickers_error(cli: OnyxWebsocketClient, responses: OnResponse):
+async def test_tickers_error(cli: OnyxWebsocketClientV1, responses: OnResponseV1):
     cli.subscribe("tickers", products=[])
     msg = await responses.get_response()
     assert msg["method"] == "subscribe"
@@ -65,7 +66,7 @@ async def test_tickers_error(cli: OnyxWebsocketClient, responses: OnResponse):
     )
 
 
-async def test_snapshots(cli: OnyxWebsocketClient, responses: OnResponse):
+async def test_snapshots(cli: OnyxWebsocketClientV1, responses: OnResponseV1):
     cli.subscribe("snapshots")
     msg = await responses.get_response()
     assert msg["method"] == "subscribe"
@@ -84,14 +85,14 @@ async def test_snapshots(cli: OnyxWebsocketClient, responses: OnResponse):
     assert msg["message"] == dict(Message="unsubscribed from snapshots")
 
 
-async def test_bad_payload(cli: OnyxWebsocketClient, responses: OnResponse):
+async def test_bad_payload(cli: OnyxWebsocketClientV1, responses: OnResponseV1):
     cli.send(dict(id="msg:1", method="order", random=True))
     msg = await responses.get_response()
     assert msg["error"]
     assert msg["message"] == dict(Message="bad request")
 
 
-async def test_tickers(cli: OnyxWebsocketClient, responses: OnResponse):
+async def test_tickers(cli: OnyxWebsocketClientV1, responses: OnResponseV1):
     cli.subscribe("tickers", products=["dub"])
     msg = await responses.get_response()
     assert msg["method"] == "subscribe"

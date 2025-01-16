@@ -48,6 +48,7 @@ def on_exit(cli: OnyxWebsocketClientV2) -> None:
 class OnyxWebsocketClientV2:
     """
     WebSocket client for the Onyx OTC API v2.
+    This clients connects to the API v2 binary WebSocket endpoint
 
     Attributes:
         api_token: API authentication token
