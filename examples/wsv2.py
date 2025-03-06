@@ -1,19 +1,24 @@
 import asyncio
 import logging
-import time
 from dataclasses import dataclass, field
 from datetime import timedelta, timezone
-from typing import NamedTuple
+from decimal import Decimal
+from typing import NamedTuple, Self
 
+import click
 import dotenv
 
-from onyx_otc.models import OtcQuote
-from onyx_otc.v2.common_pb2 import Decimal, TradableSymbol
+from onyx_otc.models import OtcQuote, TradableSymbol
+from onyx_otc.utils import to_proto_decimal
 from onyx_otc.v2.responses_pb2 import ChannelMessage, OtcResponse
 from onyx_otc.v2.types_pb2 import Exchange
 from onyx_otc.websocket_v2 import OnyxWebsocketClientV2
 
 logger = logging.getLogger(__name__)
+
+
+class InvalidInputError(ValueError):
+    pass
 
 
 class ProductRisk(NamedTuple):
@@ -24,7 +29,24 @@ class ProductRisk(NamedTuple):
 class Rfq(NamedTuple):
     symbol: TradableSymbol
     exchange: Exchange.ValueType
-    quantity: Decimal = Decimal(value="1")
+    quantity: Decimal = Decimal(1)
+
+    @classmethod
+    def from_string(cls, rfq: str) -> Self:
+        try:
+            symbol, exchange = rfq.split("@")
+        except ValueError:
+            raise InvalidInputError(
+                f"Invalid RFQ format: {rfq} - must be symbol@exchange"
+            ) from None
+        try:
+            exchange_enum = Exchange.Value(f"EXCHANGE_{exchange.upper()}")
+        except ValueError:
+            raise InvalidInputError(f"Invalid exchange: {exchange}") from None
+        return cls(
+            symbol=TradableSymbol.from_string(symbol),
+            exchange=exchange_enum,
+        )
 
 
 @dataclass
@@ -42,7 +64,11 @@ class Workflow:
                 if self.tickers:
                     cli.subscribe_tickers(self.tickers)
                 for rfq in self.rfq:
-                    cli.subscribe_rfq(rfq.symbol, rfq.quantity, rfq.exchange)
+                    cli.subscribe_rfq(
+                        rfq.symbol.to_proto(),
+                        to_proto_decimal(rfq.quantity),
+                        rfq.exchange,
+                    )
             case "subscription":
                 logger.info(
                     "Subscription channel: %s, message: %s, status: %s",
@@ -85,24 +111,42 @@ async def test_websocket(workflow: Workflow) -> None:
     await client.connect()
 
 
-async def one_client() -> None:
-    workflow = Workflow(
-        server_info=True,
-        # tickers=set(["cfd09u2413u24"]),
-        rfq=[Rfq(TradableSymbol(flat="brtz25"), exchange=Exchange.EXCHANGE_ICE)],
-    )
+async def one_client(workflow: Workflow | None = None) -> None:
+    if workflow is None:
+        workflow = Workflow(
+            server_info=True,
+            rfq=[Rfq(TradableSymbol(symbol="brtz25"), exchange=Exchange.EXCHANGE_ICE)],
+        )
     try:
         await test_websocket(workflow)
     except Exception as e:
         logger.error("%s", e)
 
 
-if __name__ == "__main__":
+@click.command()
+@click.option(
+    "--tickers",
+    "-t",
+    multiple=True,
+    help="Product symbols to subscribe to tickers channel",
+)
+@click.option("--server-info", "-s", is_flag=True, help="Subscribe to server info")
+@click.option("--rfq", "-r", help="RFQ symbols as symbol@exchange", multiple=True)
+def main(tickers: list[str], server_info: bool, rfq: list[str]) -> None:
+    """Example of using the Onyx OTC websocket client."""
     dotenv.load_dotenv()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
     try:
-        while True:
-            asyncio.run(one_client())
-            time.sleep(1)
-    except KeyboardInterrupt:
-        pass
+        workflow = Workflow(
+            server_info=server_info,
+            tickers=tickers,
+            rfq=[Rfq.from_string(r) for r in rfq],
+        )
+    except InvalidInputError as e:
+        click.echo(e, err=True)
+        raise click.Abort() from None
+    asyncio.run(one_client(workflow))
+
+
+if __name__ == "__main__":
+    main()

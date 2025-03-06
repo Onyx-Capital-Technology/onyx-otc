@@ -12,3 +12,24 @@
 ## Websocket API v2
 
 The websocket API v2 support both JSON and protobuf (binary) encoding. The protobuf encoding is more efficient and faster than JSON encoding.
+
+
+## Example
+
+The examples directory contains a simple example of how to use the websocket API v2.
+
+```bash
+python examples/example.py --help
+```
+
+Stream tickers for a list of product symbols.
+
+```bash
+python examples/example.py -t ebob -t brt
+```
+
+Stream tradable quotes for a list of contract symbols.
+
+```bash
+python examples/example.py -t ebob@ice
+```

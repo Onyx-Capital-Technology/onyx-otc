@@ -46,6 +46,18 @@ class TradableSymbol(BaseModel):
     symbol: str | Spread | Butterfly
 
     @classmethod
+    def from_string(cls, symbol: str) -> Self:
+        if "-" in symbol:
+            parts = symbol.split("-")
+            if len(parts) == 2:
+                return cls(symbol=Spread(front=parts[0], back=parts[1]))
+            if len(parts) == 3:
+                return cls(
+                    symbol=Butterfly(front=parts[0], middle=parts[1], back=parts[2])
+                )
+        return cls(symbol=symbol)
+
+    @classmethod
     def from_proto(cls, proto: common_pb2.TradableSymbol) -> Self:
         match proto.WhichOneof("symbol"):
             case "flat":
@@ -64,6 +76,23 @@ class TradableSymbol(BaseModel):
                 )
             case _:
                 raise ValueError(f"Unknown symbol type: {proto}")
+
+    def to_proto(self) -> common_pb2.TradableSymbol:
+        if isinstance(self.symbol, str):
+            return common_pb2.TradableSymbol(flat=self.symbol)
+        elif isinstance(self.symbol, Spread):
+            return common_pb2.TradableSymbol(
+                spread=common_pb2.Spread(front=self.symbol.front, back=self.symbol.back)
+            )
+        elif isinstance(self.symbol, Butterfly):
+            return common_pb2.TradableSymbol(
+                butterfly=common_pb2.Butterfly(
+                    front=self.symbol.front,
+                    middle=self.symbol.middle,
+                    back=self.symbol.back,
+                )
+            )
+        raise ValueError(f"Unknown symbol type: {self.symbol}")
 
     def as_string(self) -> str:
         if isinstance(self.symbol, str):
