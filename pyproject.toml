@@ -19,6 +19,7 @@ protobuf = "^5.27.2"
 grpcio = "^1.64.1"
 aiohttp = "^3.10.10"
 python-dotenv = "^1.0.1"
+pydantic = "^2.10.6"
 
 [tool.poetry.group.dev.dependencies]
 grpcio-tools = "^1.64.1"

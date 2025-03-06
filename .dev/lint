@@ -3,6 +3,7 @@ set -e
 
 BLACK_ARG="--check"
 RUFF_ARG=""
+CODE="onyx_otc tests examples"
 
 if [ "$1" = "fix" ] ; then
     BLACK_ARG=""
@@ -10,8 +11,8 @@ if [ "$1" = "fix" ] ; then
 fi
 
 echo "run black"
-black onyx_otc tests ${BLACK_ARG}
+black ${CODE} ${BLACK_ARG}
 echo "run ruff"
-ruff check onyx_otc tests ${RUFF_ARG}
+ruff check ${CODE} ${RUFF_ARG}
 echo "run mypy"
-mypy onyx_otc tests
+mypy ${CODE}

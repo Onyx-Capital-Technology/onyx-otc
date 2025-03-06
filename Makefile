@@ -21,7 +21,7 @@ install-buf:		## install buf protobuf tool in ~/bin
 
 .PHONY: install
 install:		## install python packages via poetry
-	poetry install --no-root
+	poetry install
 
 .PHONY: install-all
 install-all:		## install python all packages via poetry
