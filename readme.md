@@ -31,5 +31,5 @@ python examples/example.py -t ebob -t brt
 Stream tradable quotes for a list of contract symbols.
 
 ```bash
-python examples/example.py -t ebob@ice
+python examples/example.py -r brtm25@ice -r ebobm25@ice
 ```
