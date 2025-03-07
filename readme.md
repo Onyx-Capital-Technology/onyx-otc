@@ -18,6 +18,14 @@ The websocket API v2 support both JSON and protobuf (binary) encoding. The proto
 
 The examples directory contains a simple example of how to use the websocket API v2.
 
+To use the example, first install the all packages via
+
+```bash
+make install-all
+```
+
+Then run the example with the following command:
+
 ```bash
 python examples/wsv2.py --help
 ```
