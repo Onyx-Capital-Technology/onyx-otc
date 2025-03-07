@@ -19,17 +19,17 @@ The websocket API v2 support both JSON and protobuf (binary) encoding. The proto
 The examples directory contains a simple example of how to use the websocket API v2.
 
 ```bash
-python examples/example.py --help
+python examples/wsv2.py --help
 ```
 
 Stream tickers for a list of product symbols.
 
 ```bash
-python examples/example.py -t ebob -t brt
+python examples/wsv2.py -t ebob -t brt
 ```
 
 Stream tradable quotes for a list of contract symbols.
 
 ```bash
-python examples/example.py -r brtm25@ice -r ebobm25@ice
+python examples/wsv2.py -r brtm25@ice -r ebobm25@ice
 ```
