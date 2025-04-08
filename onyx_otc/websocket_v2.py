@@ -1,29 +1,29 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
-from abc import ABC, abstractmethod
+from abc import ABC
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
-from typing import Any, Callable, TypeAlias
+from typing import Any, Callable, Self, TypeAlias
 
 from aiohttp import ClientSession, ClientWebSocketResponse, WSMsgType
-from google.protobuf.timestamp_pb2 import Timestamp
 
-from .models import Exchange, OtcChannelMessage, OtcResponse, TradableSymbol
-from .v2.common_pb2 import Decimal
-from .v2.requests_pb2 import (
-    Auth,
+from .models import (
+    AuthRequest,
     OrdersChannel,
+    OtcChannelMessage,
+    OtcOrderRequest,
     OtcRequest,
+    OtcResponse,
     RfqChannel,
     ServerInfoChannel,
-    Subscribe,
+    SubscribeRequest,
     TickersChannel,
-    Unsubscribe,
+    UnsubscribeRequest,
 )
-from .v2.types_pb2 import Method
+from .timestamp import Timestamp
 
 logger = logging.getLogger(__name__)
 
@@ -75,53 +75,123 @@ class OnyxWebsocketClientV2(ABC):
     _write_task: asyncio.Task | None = field(default=None, init=False)
     _is_running: bool = field(default=False, init=False)
     _reconnect_delay: float = 0.0
+    _id_counter: int = 0
+
+    @classmethod
+    def create(
+        cls,
+        *,
+        binary: bool = True,
+        ws_url: str | None = None,
+        **kwargs: Any,
+    ) -> Self:
+        """Create a client instance."""
+        ws_url_ = (
+            ws_url
+            or os.environ.get("ONYX_WS_V2_URL")
+            or "wss://ws.onyxhub.co/stream/v2/binary"
+        )
+        if ws_url_.endswith("/binary") and not binary:
+            ws_url_ = ws_url_.replace("/binary", "")
+        return cls(ws_url=ws_url_, **kwargs)
+
+    @property
+    def is_binary(self) -> bool:
+        """Check if the client is using binary protocol."""
+        return self.ws_url.endswith("/binary")
 
     @property
     def is_running(self) -> bool:
         """Check if the client is currently running."""
         return self._is_running
 
-    @abstractmethod
-    async def handle_binary_message(self, data: bytes) -> None:
-        """Handle incoming binary messages."""
-
-    @abstractmethod
-    async def handle_text_message(self, data: str) -> None:
-        """Handle incoming string messages."""
-
-    @abstractmethod
     def authenticate(self) -> None:
         """Authenticate the client."""
+        if self.api_token:
+            self.send(self.request(AuthRequest(token=self.api_token)))
+        else:
+            logger.warning("No API token provided, authentication skipped")
 
-    @abstractmethod
     def subscribe_server_info(self) -> None:
         """Subscribe to server info channel."""
+        self.send(self.request(SubscribeRequest(data=ServerInfoChannel())))
 
-    @abstractmethod
     def unsubscribe_server_info(self) -> None:
         """Unsubscribe from server info channel."""
+        self.send(self.request(UnsubscribeRequest(data=ServerInfoChannel())))
 
-    @abstractmethod
     def subscribe_tickers(self, products: list[str]) -> None:
         """Subscribe to ticker updates for specific products."""
+        self.send(
+            self.request(SubscribeRequest(data=TickersChannel(products=products)))
+        )
 
-    @abstractmethod
     def unsubscribe_tickers(self, products: list[str]) -> None:
         """Unsubscribe from ticker updates for specific products."""
+        self.send(
+            self.request(UnsubscribeRequest(data=TickersChannel(products=products)))
+        )
 
-    @abstractmethod
     def subscribe_orders(self) -> None:
         """Subscribe to order updates."""
+        self.send(self.request(SubscribeRequest(data=OrdersChannel())))
 
-    @abstractmethod
     def unsubscribe_orders(self) -> None:
         """Unsubscribe from order updates."""
+        self.send(self.request(UnsubscribeRequest(data=OrdersChannel())))
 
-    @abstractmethod
-    def subscribe_rfq(
-        self, symbol: TradableSymbol, size: Decimal, exchange: Exchange
-    ) -> None:
+    def subscribe_rfq(self, rfq: RfqChannel) -> None:
         """Subscribe to RFQ updates."""
+        self.send(self.request(SubscribeRequest(data=rfq)))
+
+    def unsubscribe_rfq(self, rfq: RfqChannel) -> None:
+        """Unsubscribe from RFQ updates."""
+        self.send(self.request(UnsubscribeRequest(data=rfq)))
+
+    async def handle_binary_message(self, data: bytes) -> None:
+        """Handle incoming binary messages."""
+        if response := OtcResponse.from_proto_bytes(data):
+            self.on_response(self, response)
+        elif message := OtcChannelMessage.from_proto_bytes(data):
+            self.on_event(self, message)
+        else:
+            logger.warning("Unknown message type received")
+
+    async def handle_text_message(self, data: str) -> None:
+        """Handle incoming text messages."""
+        payload = json.loads(data)
+        if response := OtcResponse.from_json(payload):
+            self.on_response(self, response)
+        elif message := OtcChannelMessage.from_json(payload):
+            self.on_event(self, message)
+        else:
+            logger.warning("Unknown message type received")
+
+    def send(self, msg: OtcRequest) -> None:
+        """Queue a message for sending."""
+        if not self._is_running:
+            logger.warning("Client not running, message dropped: %s", msg)
+            return
+        if self.is_binary:
+            self._queue.put_nowait(msg.to_proto().SerializeToString())
+        else:
+            self._queue.put_nowait(json.dumps(msg.to_json_dict()))
+
+    def new_id(self) -> str:
+        """Generate a new unique ID for requests."""
+        self._id_counter += 1
+        return f"wscli:{self._id_counter}"
+
+    def request(
+        self,
+        request: AuthRequest | OtcOrderRequest | SubscribeRequest | UnsubscribeRequest,
+    ) -> OtcRequest:
+        """Create a new request with the current timestamp."""
+        return OtcRequest(
+            id=self.new_id(),
+            timestamp=Timestamp.utcnow(),
+            request=request,
+        )
 
     async def connect(self) -> None:
         """Connect to the websocket server with automatic reconnection."""
@@ -201,116 +271,3 @@ class OnyxWebsocketClientV2(ABC):
                 await self._write_task
             except asyncio.CancelledError:
                 pass
-
-
-@dataclass
-class OnyxProtoWebsocketClientV2(OnyxWebsocketClientV2):
-    ws_url: str = field(
-        default_factory=lambda: os.environ.get(
-            "ONYX_WS_V2_URL", "wss://ws.onyxhub.co/stream/v2/binary"
-        )
-    )
-
-    def _create_request(self, method: Method.ValueType, **kwargs: Any) -> OtcRequest:
-        """Create a new request with the current timestamp."""
-        timestamp = Timestamp()
-        timestamp.FromDatetime(datetime.now(UTC))
-        return OtcRequest(method=method, timestamp=timestamp, **kwargs)
-
-    async def handle_binary_message(self, data: bytes) -> None:
-        """Handle incoming binary messages."""
-        if response := OtcResponse.from_proto_bytes(data):
-            self.on_response(self, response)
-        elif message := OtcChannelMessage.from_proto_bytes(data):
-            self.on_event(self, message)
-        else:
-            logger.warning("Unknown message type received")
-
-    async def handle_text_message(self, data: str) -> None:
-        """Handle incoming text messages."""
-        logger.warning("Received unexpected text message: %s", data)
-
-    def authenticate(self) -> None:
-        """Authenticate the client."""
-        if self.api_token:
-            self.send(
-                self._create_request(
-                    method=Method.METHOD_AUTH, auth=Auth(token=self.api_token)
-                )
-            )
-        else:
-            logger.warning("No API token provided, authentication skipped")
-
-    def subscribe_server_info(self) -> None:
-        """Subscribe to server info channel."""
-        self.send(
-            self._create_request(
-                method=Method.METHOD_SUBSCRIBE,
-                subscribe=Subscribe(server_info=ServerInfoChannel()),
-            )
-        )
-
-    def unsubscribe_server_info(self) -> None:
-        """Unsubscribe from server info channel."""
-        self.send(
-            self._create_request(
-                method=Method.METHOD_UNSUBSCRIBE,
-                unsubscribe=Unsubscribe(server_info=ServerInfoChannel()),
-            )
-        )
-
-    def subscribe_tickers(self, products: list[str]) -> None:
-        """Subscribe to ticker updates for specific products."""
-        self.send(
-            self._create_request(
-                method=Method.METHOD_SUBSCRIBE,
-                subscribe=Subscribe(tickers=TickersChannel(products=products)),
-            )
-        )
-
-    def unsubscribe_tickers(self, products: list[str]) -> None:
-        """Unsubscribe from ticker updates for specific products."""
-        self.send(
-            self._create_request(
-                method=Method.METHOD_UNSUBSCRIBE,
-                unsubscribe=Unsubscribe(tickers=TickersChannel(products=products)),
-            )
-        )
-
-    def subscribe_orders(self) -> None:
-        """Subscribe to order updates."""
-        self.send(
-            self._create_request(
-                method=Method.METHOD_SUBSCRIBE,
-                subscribe=Subscribe(orders=OrdersChannel()),
-            )
-        )
-
-    def unsubscribe_orders(self) -> None:
-        """Unsubscribe from order updates."""
-        self.send(
-            self._create_request(
-                method=Method.METHOD_UNSUBSCRIBE,
-                unsubscribe=Unsubscribe(orders=OrdersChannel()),
-            )
-        )
-
-    def subscribe_rfq(
-        self, symbol: TradableSymbol, size: Decimal, exchange: Exchange
-    ) -> None:
-        """Subscribe to RFQ updates."""
-        self.send(
-            self._create_request(
-                method=Method.METHOD_SUBSCRIBE,
-                subscribe=Subscribe(
-                    rfq_channel=RfqChannel(symbol=symbol, size=size, exchange=exchange)
-                ),
-            )
-        )
-
-    def send(self, msg: OtcRequest) -> None:
-        """Queue a message for sending."""
-        if not self._is_running:
-            logger.warning("Client not running, message dropped: %s", msg)
-            return
-        self._queue.put_nowait(msg.SerializeToString())

@@ -2,16 +2,11 @@ import asyncio
 import logging
 from dataclasses import dataclass, field
 from datetime import timedelta, timezone
-from decimal import Decimal
-from typing import NamedTuple, Self
 
 import click
 import dotenv
 
-from onyx_otc.models import OtcQuote, TradableSymbol
-from onyx_otc.utils import to_proto_decimal
-from onyx_otc.v2.responses_pb2 import ChannelMessage, OtcResponse
-from onyx_otc.v2.types_pb2 import Exchange
+from onyx_otc.models import OtcQuote, OtcResponse, RfqChannel, TradableSymbol
 from onyx_otc.websocket_v2 import OnyxWebsocketClientV2
 
 logger = logging.getLogger(__name__)
@@ -21,65 +16,32 @@ class InvalidInputError(ValueError):
     pass
 
 
-class ProductRisk(NamedTuple):
-    product_symbol: str
-    account_id: float
-
-
-class Rfq(NamedTuple):
-    symbol: TradableSymbol
-    exchange: Exchange.ValueType
-    quantity: Decimal = Decimal(1)
-
-    @classmethod
-    def from_string(cls, rfq: str) -> Self:
-        try:
-            symbol, exchange = rfq.split("@")
-        except ValueError:
-            raise InvalidInputError(
-                f"Invalid RFQ format: {rfq} - must be symbol@exchange"
-            ) from None
-        try:
-            exchange_enum = Exchange.Value(f"EXCHANGE_{exchange.upper()}")
-        except ValueError:
-            raise InvalidInputError(f"Invalid exchange: {exchange}") from None
-        return cls(
-            symbol=TradableSymbol.from_string(symbol),
-            exchange=exchange_enum,
-        )
-
-
 @dataclass
 class Workflow:
     tickers: list[str] = field(default_factory=list)
     server_info: bool = False
-    rfq: list[Rfq] = field(default_factory=list)
+    rfq: list[RfqChannel] = field(default_factory=list)
 
     def on_response(self, cli: OnyxWebsocketClientV2, response: OtcResponse) -> None:
-        match response.WhichOneof("response"):
-            case "auth":
-                logger.info("Auth response: %s", response.auth.message)
-                if self.server_info:
-                    cli.subscribe_server_info()
-                if self.tickers:
-                    cli.subscribe_tickers(self.tickers)
-                for rfq in self.rfq:
-                    cli.subscribe_rfq(
-                        rfq.symbol.to_proto(),
-                        to_proto_decimal(rfq.quantity),
-                        rfq.exchange,
-                    )
-            case "subscription":
-                logger.info(
-                    "Subscription channel: %s, message: %s, status: %s",
-                    response.subscription.channel,
-                    response.subscription.message,
-                    response.subscription.status,
-                )
-            case "order":
-                logger.info("Order: %s", response.order)
-            case "error":
-                logger.error("Error: %s", response.error.message)
+        if auth := response.auth():
+            logger.info("Auth response: %s", auth.message)
+            if self.server_info:
+                cli.subscribe_server_info()
+            if self.tickers:
+                cli.subscribe_tickers(self.tickers)
+            for rfq in self.rfq:
+                cli.subscribe_rfq(rfq)
+        elif subscription := response.subscription():
+            logger.info(
+                "Subscription channel: %s, message: %s, status: %s",
+                subscription.channel,
+                subscription.message,
+                subscription.status,
+            )
+        elif order := response.order():
+            logger.info("Order: %s", order)
+        elif error := response.error():
+            logger.error("Error %s: %s", error.code, error.message)
 
     def on_event(self, cli: OnyxWebsocketClientV2, message: ChannelMessage) -> None:
         match message.WhichOneof("message"):
@@ -130,8 +92,18 @@ async def one_client(workflow: Workflow | None = None) -> None:
     multiple=True,
     help="Product symbols to subscribe to tickers channel",
 )
-@click.option("--server-info", "-s", is_flag=True, help="Subscribe to server info")
-@click.option("--rfq", "-r", help="RFQ symbols as symbol@exchange", multiple=True)
+@click.option(
+    "--server-info",
+    "-s",
+    is_flag=True,
+    help="Subscribe to server info",
+)
+@click.option(
+    "--rfq",
+    "-r",
+    help="RFQ symbols as <symbol>@<exchange>@<size=1>",
+    multiple=True,
+)
 def main(tickers: list[str], server_info: bool, rfq: list[str]) -> None:
     """Example of using the Onyx OTC websocket client."""
     dotenv.load_dotenv()
@@ -140,7 +112,7 @@ def main(tickers: list[str], server_info: bool, rfq: list[str]) -> None:
         workflow = Workflow(
             server_info=server_info,
             tickers=tickers,
-            rfq=[Rfq.from_string(r) for r in rfq],
+            rfq=[RfqChannel.from_str(r) for r in rfq],
         )
     except InvalidInputError as e:
         click.echo(e, err=True)

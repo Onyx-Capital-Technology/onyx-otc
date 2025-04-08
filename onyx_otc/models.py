@@ -265,12 +265,24 @@ class OrdersChannel(BaseModel):
         return requests_pb2.OrdersChannel()
 
 
-class Rfq(BaseModel):
+class RfqChannel(BaseModel):
     """Request for subscribing to RFQ updates for a symbol."""
 
     symbol: TradableSymbol
-    size: Decimal
     exchange: Exchange
+    size: Decimal = Decimal(1)
+
+    def from_str(cls, rfq: str) -> Self:
+        bits = rfq.split("@")
+        if len(bits) > 1:
+            symbol = TradableSymbol.from_string(bits[0])
+            exchange = Exchange.from_proto(bits[1])
+            size = Decimal(bits[2]) if len(bits) > 2 else Decimal(1)
+            return cls(symbol=symbol, exchange=exchange, size=size)
+        else:
+            raise ValueError(
+                f"Invalid RFQ format: {rfq}. Expected <symbol>@<exchange>@<size>"
+            )
 
     def to_proto(self) -> requests_pb2.RfqChannel:
         return requests_pb2.RfqChannel(
@@ -285,12 +297,18 @@ channel_from_data_type = {
     TickersChannel: Channel.TICKERS,
     OrdersChannel: Channel.ORDERS,
     OrderBookTopChannel: Channel.ORDER_BOOK_TOP,
-    Rfq: Channel.RFQ,
+    RfqChannel: Channel.RFQ,
 }
 
 
 class SubscribeRequestBase(BaseModel):
-    data: ServerInfoChannel | TickersChannel | OrdersChannel | Rfq | OrderBookTopChannel
+    data: (
+        ServerInfoChannel
+        | TickersChannel
+        | OrdersChannel
+        | RfqChannel
+        | OrderBookTopChannel
+    )
 
     @property
     def channel(self) -> Channel:
@@ -322,7 +340,7 @@ request_method_from_data_type = {
 class OtcRequest(BaseModel):
     id: str
     timestamp: Timestamp
-    request: AuthRequest | OtcOrderRequest | SubscribeRequest
+    request: AuthRequest | OtcOrderRequest | SubscribeRequest | UnsubscribeRequest
 
     @property
     def method(self) -> Method:
@@ -335,6 +353,14 @@ class OtcRequest(BaseModel):
             timestamp=self.timestamp.to_proto(),
             method=method.to_proto(),
             **{method.value: self.request.to_proto()},  # type: ignore[arg-type]
+        )
+
+    def to_json_dict(self) -> dict:
+        return dict(
+            id=self.id,
+            method=self.method.value,
+            timestamp=self.timestamp.millis,
+            **self.request.model_dump(),
         )
 
 
@@ -371,6 +397,39 @@ class Ticker(BaseModel):
             product_symbol=proto.product_symbol,
             timestamp=Timestamp.from_proto(proto.timestamp),
             mid=Decimal(proto.mid.value),
+        )
+
+
+class OrderBookTop(BaseModel):
+    buy: PriceAmount
+    sell: PriceAmount
+    symbol: str
+    product_symbol: str
+    timestamp: Timestamp
+    exchange: Exchange
+
+    @classmethod
+    def from_proto(cls, proto: responses_pb2.OrderBookTop) -> Self:
+        return cls(
+            buy=PriceAmount.from_proto(proto.buy),
+            sell=PriceAmount.from_proto(proto.sell),
+            symbol=proto.symbol,
+            product_symbol=proto.product_symbol,
+            timestamp=Timestamp.from_proto(proto.timestamp),
+            exchange=Exchange.from_proto(proto.exchange),
+        )
+
+
+class OrderBookTops(BaseModel):
+    order_book_tops: list[OrderBookTop]
+
+    @classmethod
+    def from_proto(cls, proto: responses_pb2.OrderBookTops) -> Self:
+        return cls(
+            order_book_tops=[
+                OrderBookTop.from_proto(order_book_top)
+                for order_book_top in proto.order_book_tops
+            ]
         )
 
 
@@ -466,6 +525,26 @@ class OtcResponse(BaseModel):
     timestamp: datetime
     data: Auth | OtcError | OtcSubscription | OtcOrder
 
+    def auth(self) -> Auth | None:
+        if isinstance(self.data, Auth):
+            return self.data
+        return None
+
+    def error(self) -> OtcError | None:
+        if isinstance(self.data, OtcError):
+            return self.data
+        return None
+
+    def subscription(self) -> OtcSubscription | None:
+        if isinstance(self.data, OtcSubscription):
+            return self.data
+        return None
+
+    def order(self) -> OtcOrder | None:
+        if isinstance(self.data, OtcOrder):
+            return self.data
+        return None
+
     @classmethod
     def from_proto_bytes(cls, proto_bytes: bytes) -> Self | None:
         try:
@@ -549,7 +628,7 @@ class OtcResponse(BaseModel):
 class OtcChannelMessage(BaseModel):
     channel: Channel
     timestamp: Timestamp
-    data: ServerInfo | Tickers
+    data: ServerInfo | Tickers | OtcQuote | OrderBookTops
 
     @classmethod
     def from_proto_bytes(cls, proto_bytes: bytes) -> Self | None:
@@ -568,12 +647,16 @@ class OtcChannelMessage(BaseModel):
     @classmethod
     def get_data_from_proto(
         cls, proto: responses_pb2.ChannelMessage
-    ) -> ServerInfo | Tickers | None:
+    ) -> ServerInfo | Tickers | OtcQuote | OrderBookTops | None:
         match proto.WhichOneof("message"):  # type: ignore[arg-type]
             case "server_info":
                 return ServerInfo.from_proto(proto.server_info)
             case "tickers":
                 return Tickers.from_proto(proto.tickers)
+            case "otc_quote":
+                return OtcQuote.from_proto(proto.otc_quote)
+            case "order_book_tops":
+                return OrderBookTops.from_proto(proto.order_book_tops)
             case _:
                 return None
 
