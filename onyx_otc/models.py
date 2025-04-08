@@ -1,11 +1,114 @@
+from __future__ import annotations
+
+import enum
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Self
 
 from pydantic import BaseModel
 
-from .v2 import common_pb2, responses_pb2
-from .v2.types_pb2 import Exchange
+from .timestamp import Timestamp
+from .v2 import common_pb2, requests_pb2, responses_pb2, types_pb2
+
+
+class Exchange(enum.StrEnum):
+    UNSPECIFIED = enum.auto()
+    ICE = enum.auto()
+    CME = enum.auto()
+
+    @classmethod
+    def from_proto(cls, proto: types_pb2.Exchange.ValueType) -> Self:
+        return cls[types_pb2.Exchange.Name(proto)[8:]]
+
+    def to_proto(self) -> types_pb2.Exchange.ValueType:
+        return getattr(types_pb2.Exchange, f"EXCHANGE_{self.name}")
+
+
+class Method(enum.StrEnum):
+    UNSPECIFIED = enum.auto()
+    AUTH = enum.auto()
+    ORDER = enum.auto()
+    SUBSCRIBE = enum.auto()
+    UNSUBSCRIBE = enum.auto()
+
+    @classmethod
+    def from_proto(cls, proto: types_pb2.Method.ValueType) -> Self:
+        return cls[types_pb2.Method.Name(proto)[7:]]
+
+    def to_proto(self) -> types_pb2.Method.ValueType:
+        return getattr(types_pb2.Method, f"METHOD_{self.name}")
+
+
+class Channel(enum.StrEnum):
+    UNSPECIFIED = enum.auto()
+    SERVER_INFO = enum.auto()
+    TICKERS = enum.auto()
+    ORDERS = enum.auto()
+    ORDER_BOOK_TOP = enum.auto()
+    RFQ = enum.auto()
+
+    @classmethod
+    def from_proto(cls, proto: types_pb2.Channel.ValueType) -> Self:
+        return cls[types_pb2.Channel.Name(proto)[7:]]
+
+    def to_proto(self) -> types_pb2.Channel.ValueType:
+        return getattr(types_pb2.Channel, f"CHANNEL_{self.name}")
+
+
+class OrderType(enum.StrEnum):
+    UNSPECIFIED = enum.auto()
+    FILL_OR_KILL = enum.auto()
+
+    @classmethod
+    def from_proto(cls, proto: types_pb2.OrderType.ValueType) -> Self:
+        return cls[types_pb2.OrderType.Name(proto)[11:]]
+
+    def to_proto(self) -> types_pb2.OrderType.ValueType:
+        return getattr(types_pb2.OrderType, f"ORDER_TYPE_{self.name}")
+
+
+class Side(enum.StrEnum):
+    UNSPECIFIED = enum.auto()
+    BUY = enum.auto()
+    SELL = enum.auto()
+
+    @classmethod
+    def from_proto(cls, proto: types_pb2.Side.ValueType) -> Self:
+        return cls[types_pb2.Side.Name(proto)[5:]]
+
+    def to_proto(self) -> types_pb2.Side.ValueType:
+        return getattr(types_pb2.Side, f"SIDE_{self.name}")
+
+
+class SubscriptionStatus(enum.StrEnum):
+    UNSPECIFIED = enum.auto()
+    SUBSCRIBED = enum.auto()
+    UNSUBSCRIBED = enum.auto()
+
+    @classmethod
+    def from_proto(cls, proto: types_pb2.SubscriptionStatus.ValueType) -> Self:
+        return cls[types_pb2.SubscriptionStatus.Name(proto)[12:]]
+
+    def to_proto(self) -> types_pb2.SubscriptionStatus.ValueType:
+        return getattr(types_pb2.SubscriptionStatus, f"SUBSCRIPTION_STATUS_{self.name}")
+
+
+class OtcErrorCode(enum.StrEnum):
+    UNSPECIFIED = enum.auto()
+    INVALID_REQUEST = enum.auto()
+    NOT_IMPLEMENTED = enum.auto()
+    UNAUTHENTICATED = enum.auto()
+    TOO_MANY_REQUESTS = enum.auto()
+    NOT_SUBSCRIBED = enum.auto()
+    FORBIDDEN = enum.auto()
+    INTERNAL_SERVER_ERROR = enum.auto()
+
+    @classmethod
+    def from_proto(cls, proto: types_pb2.OtcErrorCode.ValueType) -> Self:
+        return cls[types_pb2.OtcErrorCode.Name(proto)[13:]]
+
+    def to_proto(self) -> types_pb2.OtcErrorCode.ValueType:
+        return getattr(types_pb2.OtcErrorCode, f"OTC_ERROR_CODE_{self.name}")
 
 
 class Spread(BaseModel):
@@ -100,9 +203,216 @@ class TradableSymbol(BaseModel):
         return self.symbol.to_string()
 
 
+class AuthRequest(BaseModel):
+    """Request for authentication."""
+
+    token: str
+
+    def to_proto(self) -> requests_pb2.Auth:
+        return requests_pb2.Auth(token=self.token)
+
+
+class OtcOrderRequest(BaseModel):
+    """Request for placing an order."""
+
+    account_id: str
+    symbol: TradableSymbol
+    quantity: Decimal
+    side: Side
+    price: Decimal
+    order_type: OrderType = OrderType.FILL_OR_KILL
+    client_order_id: str = ""
+
+    def to_proto(self) -> requests_pb2.NewOrderRequest:
+        return requests_pb2.NewOrderRequest(
+            account_id=self.account_id,
+            symbol=self.symbol.to_proto(),
+            quantity=common_pb2.Decimal(value=str(self.quantity)),
+            side=self.side.to_proto(),
+            price=common_pb2.Decimal(value=str(self.price)),
+            order_type=self.order_type.to_proto(),
+            client_order_id=self.client_order_id,
+        )
+
+
+class TickersChannel(BaseModel):
+    """Request for subscribing to ticker updates for a list of product symbols."""
+
+    products: list[str]
+
+    def to_proto(self) -> requests_pb2.TickersChannel:
+        return requests_pb2.TickersChannel(products=self.products)
+
+
+class OrderBookTopChannel(BaseModel):
+    """Request for subscribing to ticker updates for a list of product symbols."""
+
+    products: list[str]
+
+    def to_proto(self) -> requests_pb2.OrderBookTopChannel:
+        return requests_pb2.OrderBookTopChannel(products=self.products)
+
+
+class ServerInfoChannel(BaseModel):
+
+    def to_proto(self) -> requests_pb2.ServerInfoChannel:
+        return requests_pb2.ServerInfoChannel()
+
+
+class OrdersChannel(BaseModel):
+
+    def to_proto(self) -> requests_pb2.OrdersChannel:
+        return requests_pb2.OrdersChannel()
+
+
+class Rfq(BaseModel):
+    """Request for subscribing to RFQ updates for a symbol."""
+
+    symbol: TradableSymbol
+    size: Decimal
+    exchange: Exchange
+
+    def to_proto(self) -> requests_pb2.RfqChannel:
+        return requests_pb2.RfqChannel(
+            symbol=self.symbol.to_proto(),
+            size=common_pb2.Decimal(value=str(self.size)),
+            exchange=self.exchange.to_proto(),
+        )
+
+
+channel_from_data_type = {
+    ServerInfoChannel: Channel.SERVER_INFO,
+    TickersChannel: Channel.TICKERS,
+    OrdersChannel: Channel.ORDERS,
+    OrderBookTopChannel: Channel.ORDER_BOOK_TOP,
+    Rfq: Channel.RFQ,
+}
+
+
+class SubscribeRequestBase(BaseModel):
+    data: ServerInfoChannel | TickersChannel | OrdersChannel | Rfq | OrderBookTopChannel
+
+    @property
+    def channel(self) -> Channel:
+        return channel_from_data_type[type(self.data)]
+
+
+class SubscribeRequest(SubscribeRequestBase):
+    """Request for subscribing to a channel."""
+
+    def to_proto(self) -> requests_pb2.Subscribe:
+        return requests_pb2.Subscribe(**{self.channel.value: self.data.to_proto()})  # type: ignore[arg-type]
+
+
+class UnsubscribeRequest(SubscribeRequestBase):
+    """Request for unsubscribing from a channel."""
+
+    def to_proto(self) -> requests_pb2.Unsubscribe:
+        return requests_pb2.Unsubscribe(**{self.channel.value: self.data.to_proto()})  # type: ignore[arg-type]
+
+
+request_method_from_data_type = {
+    AuthRequest: Method.AUTH,
+    OtcOrderRequest: Method.ORDER,
+    SubscribeRequest: Method.SUBSCRIBE,
+    UnsubscribeRequest: Method.UNSUBSCRIBE,
+}
+
+
+class OtcRequest(BaseModel):
+    id: str
+    timestamp: Timestamp
+    request: AuthRequest | OtcOrderRequest | SubscribeRequest
+
+    @property
+    def method(self) -> Method:
+        return request_method_from_data_type[type(self.request)]
+
+    def to_proto(self) -> requests_pb2.OtcRequest:
+        method = self.method
+        return requests_pb2.OtcRequest(
+            id=self.id,
+            timestamp=self.timestamp.to_proto(),
+            method=method.to_proto(),
+            **{method.value: self.request.to_proto()},  # type: ignore[arg-type]
+        )
+
+
+class Auth(BaseModel):
+    message: str = ""
+
+    @classmethod
+    def from_proto(cls, proto: responses_pb2.AuthResponse) -> Self:
+        return cls(message=proto.message)
+
+
+class ServerInfo(BaseModel):
+    socket_uid: str
+    age_millis: int
+
+    @classmethod
+    def from_proto(cls, proto: responses_pb2.ServerInfo) -> Self:
+        return cls(
+            socket_uid=proto.socket_uid,
+            age_millis=proto.age_millis,
+        )
+
+
+class Ticker(BaseModel):
+    symbol: str
+    product_symbol: str
+    timestamp: Timestamp
+    mid: Decimal
+
+    @classmethod
+    def from_proto(cls, proto: responses_pb2.Ticker) -> Self:
+        return cls(
+            symbol=proto.symbol,
+            product_symbol=proto.product_symbol,
+            timestamp=Timestamp.from_proto(proto.timestamp),
+            mid=Decimal(proto.mid.value),
+        )
+
+
+class Tickers(BaseModel):
+    tickers: list[Ticker]
+
+    @classmethod
+    def from_proto(cls, proto: responses_pb2.Tickers) -> Self:
+        return cls(
+            tickers=[Ticker.from_proto(ticker) for ticker in proto.tickers],
+        )
+
+
+class OtcSubscription(BaseModel):
+    channel: Channel
+    status: SubscriptionStatus
+    message: str
+
+    @classmethod
+    def from_proto(cls, proto: responses_pb2.Subscription) -> Self:
+        return cls(
+            channel=Channel.from_proto(proto.channel),
+            status=SubscriptionStatus.from_proto(proto.status),
+            message=proto.message,
+        )
+
+
+class OtcError(BaseModel):
+    code: OtcErrorCode
+    message: str
+
+    @classmethod
+    def from_proto(cls, proto: responses_pb2.OtcError) -> Self:
+        return cls(
+            code=OtcErrorCode.from_proto(proto.code),
+            message=proto.message,
+        )
+
+
 class OtcQuote(BaseModel):
     symbol: TradableSymbol
-    exchange: Exchange.ValueType
+    exchange: Exchange
     timestamp: datetime
     product_symbol: str
     buy: PriceAmount
@@ -112,7 +422,7 @@ class OtcQuote(BaseModel):
     def from_proto(cls, proto: responses_pb2.OtcQuote) -> Self:
         return cls(
             symbol=TradableSymbol.from_proto(proto.symbol),
-            exchange=proto.exchange,
+            exchange=Exchange.from_proto(proto.exchange),
             timestamp=proto.timestamp.ToDatetime(timezone.utc),
             product_symbol=proto.product_symbol,
             buy=PriceAmount.from_proto(proto.buy),
@@ -125,3 +435,179 @@ class OtcQuote(BaseModel):
             f"buy: {self.buy.as_string()}, "
             f"sell: {self.sell.as_string()}"
         )
+
+
+class OtcOrder(BaseModel):
+    id: str
+    client_order_id: str
+    account_id: str
+    symbol: TradableSymbol
+    product_symbol: str
+    amount: Decimal
+    side: Side
+    price: Decimal
+
+    @classmethod
+    def from_proto(cls, proto: responses_pb2.Order) -> Self:
+        return cls(
+            id=proto.id,
+            client_order_id=proto.client_order_id,
+            account_id=proto.account_id,
+            symbol=TradableSymbol.from_proto(proto.symbol),
+            product_symbol=proto.product_symbol,
+            amount=Decimal(proto.amount.value),
+            side=Side.from_proto(proto.side),
+            price=Decimal(proto.price.value),
+        )
+
+
+class OtcResponse(BaseModel):
+    id: str
+    timestamp: datetime
+    data: Auth | OtcError | OtcSubscription | OtcOrder
+
+    @classmethod
+    def from_proto_bytes(cls, proto_bytes: bytes) -> Self | None:
+        try:
+            proto = responses_pb2.OtcResponse.FromString(proto_bytes)
+            if data := cls.get_data_from_proto(proto):
+                return cls(
+                    id=proto.id,
+                    timestamp=Timestamp.from_proto(proto.timestamp).to_datetime(),
+                    data=data,
+                )
+            return None
+        except Exception:
+            return None
+
+    @classmethod
+    def get_data_from_proto(
+        cls, proto: responses_pb2.OtcResponse
+    ) -> Auth | OtcError | OtcSubscription | OtcOrder | None:
+        match proto.WhichOneof("data"):  # type: ignore[arg-type]
+            case "auth":
+                return Auth.from_proto(proto.auth)
+            case "error":
+                return OtcError.from_proto(proto.error)
+            case "subscription":
+                return OtcSubscription.from_proto(proto.subscription)
+            case "order":
+                return OtcOrder.from_proto(proto.order)
+            case _:
+                return None
+
+    @classmethod
+    def from_json(cls, payload: dict) -> Self | None:
+        id_ = payload.get("id")
+        if id_ is None:
+            return None
+        method = payload["method"]
+        timestamp = datetime.fromtimestamp(payload["timestamp"])
+        match method:
+            case "auth":
+                return cls(
+                    id=id_, timestamp=timestamp, data=Auth(message=payload["message"])
+                )
+            case "error":
+                return cls(
+                    id=id_,
+                    timestamp=timestamp,
+                    data=OtcError(
+                        message=payload["message"],
+                        code=OtcErrorCode[payload["code"]],
+                    ),
+                )
+            case "subscription" | "unsubscription":
+                return cls(
+                    id=id_,
+                    timestamp=timestamp,
+                    data=OtcSubscription(
+                        channel=payload["channel"],
+                        message=payload["message"],
+                        status=payload["status"],
+                    ),
+                )
+            case "order":
+                return cls(
+                    id=id_,
+                    timestamp=timestamp,
+                    data=OtcOrder(
+                        id=payload["id"],
+                        client_order_id=payload["client_order_id"],
+                        account_id=payload["account_id"],
+                        symbol=TradableSymbol.from_string(payload["symbol"]),
+                        product_symbol=payload["product_symbol"],
+                        amount=Decimal(payload["amount"]),
+                        side=Side.from_proto(payload["side"]),
+                        price=Decimal(payload["price"]),
+                    ),
+                )
+            case _:
+                raise ValueError(f"Unknown method: {method}")
+
+
+class OtcChannelMessage(BaseModel):
+    channel: Channel
+    timestamp: Timestamp
+    data: ServerInfo | Tickers
+
+    @classmethod
+    def from_proto_bytes(cls, proto_bytes: bytes) -> Self | None:
+        try:
+            proto = responses_pb2.ChannelMessage.FromString(proto_bytes)
+            if data := cls.get_data_from_proto(proto):
+                return cls(
+                    channel=Channel.from_proto(proto.channel),
+                    timestamp=Timestamp.from_proto(proto.timestamp),
+                    data=data,
+                )
+            return None
+        except Exception:
+            return None
+
+    @classmethod
+    def get_data_from_proto(
+        cls, proto: responses_pb2.ChannelMessage
+    ) -> ServerInfo | Tickers | None:
+        match proto.WhichOneof("message"):  # type: ignore[arg-type]
+            case "server_info":
+                return ServerInfo.from_proto(proto.server_info)
+            case "tickers":
+                return Tickers.from_proto(proto.tickers)
+            case _:
+                return None
+
+    @classmethod
+    def from_json(cls, data: dict) -> OtcChannelMessage | None:
+        channel = getattr(Channel, (data.get("channel") or "").upper(), None)
+        if channel is None:
+            return None
+        timestamp = Timestamp.from_millis(data["timestamp"])
+        match channel:
+            case Channel.SERVER_INFO:
+                return OtcChannelMessage(
+                    channel=channel,
+                    timestamp=timestamp,
+                    data=ServerInfo(
+                        socket_uid=data["socket_uid"],
+                        age_millis=data["age_millis"],
+                    ),
+                )
+            case Channel.TICKERS:
+                return OtcChannelMessage(
+                    channel=channel,
+                    timestamp=timestamp,
+                    data=Tickers(
+                        tickers=[
+                            Ticker(
+                                symbol=ticker["symbol"],
+                                product_symbol=ticker["product_symbol"],
+                                timestamp=Timestamp.from_millis(ticker["timestamp"]),
+                                mid=Decimal(ticker["mid"]),
+                            )
+                            for ticker in data["tickers"]
+                        ]
+                    ),
+                )
+            case _:
+                raise ValueError(f"Unknown channel: {channel}")
