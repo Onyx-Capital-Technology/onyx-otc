@@ -1,11 +1,15 @@
-from datetime import datetime, timezone
+from __future__ import annotations
+
 from decimal import Decimal
 from typing import Self
 
 from pydantic import BaseModel
 
 from .v2 import common_pb2, responses_pb2
-from .v2.types_pb2 import Exchange
+
+
+class InvalidInputError(ValueError):
+    pass
 
 
 class Spread(BaseModel):
@@ -98,30 +102,3 @@ class TradableSymbol(BaseModel):
         if isinstance(self.symbol, str):
             return self.symbol
         return self.symbol.to_string()
-
-
-class OtcQuote(BaseModel):
-    symbol: TradableSymbol
-    exchange: Exchange.ValueType
-    timestamp: datetime
-    product_symbol: str
-    buy: PriceAmount
-    sell: PriceAmount
-
-    @classmethod
-    def from_proto(cls, proto: responses_pb2.OtcQuote) -> Self:
-        return cls(
-            symbol=TradableSymbol.from_proto(proto.symbol),
-            exchange=proto.exchange,
-            timestamp=proto.timestamp.ToDatetime(timezone.utc),
-            product_symbol=proto.product_symbol,
-            buy=PriceAmount.from_proto(proto.buy),
-            sell=PriceAmount.from_proto(proto.sell),
-        )
-
-    def as_string(self) -> str:
-        return (
-            f"{self.symbol.as_string()} "
-            f"buy: {self.buy.as_string()}, "
-            f"sell: {self.sell.as_string()}"
-        )

@@ -1,4 +1,4 @@
-from onyx_otc.v2.types_pb2 import Channel, OtcErrorCode, SubscriptionStatus
+from onyx_otc.types import Channel, OtcErrorCode, SubscriptionStatus
 from onyx_otc.websocket_v2 import OnyxWebsocketClientV2
 
 from .utils import OnResponseV2
@@ -15,19 +15,21 @@ async def test_server_info_subscribe_unsubscribe(
     response = await responsesv2.get_otc_response()
 
     # Assert Response
-    subscription = response.subscription
-    assert subscription.channel == Channel.CHANNEL_SERVER_INFO
-    assert subscription.status == SubscriptionStatus.SUBSCRIPTION_STATUS_SUBSCRIBED
+    subscription = response.subscription()
+    assert subscription is not None
+    assert subscription.channel == Channel.SERVER_INFO
+    assert subscription.status == SubscriptionStatus.SUBSCRIBED
     assert subscription.message == "successfully subscribed to server_info"
 
     # Await for ServerInfo Channel Message After Subscription
     channel_message = await responsesv2.get_otc_event(timeout=6.0)
 
     # Assert Channel Message
-    server_info_message = channel_message.server_info
-    assert channel_message.channel == Channel.CHANNEL_SERVER_INFO
-    assert server_info_message.socket_uid != ""
-    assert server_info_message.age_millis > 0
+    server_info = channel_message.server_info()
+    assert server_info is not None
+    assert channel_message.channel == Channel.SERVER_INFO
+    assert server_info.socket_uid != ""
+    assert server_info.age_millis > 0
 
     # Unsubscribe from ServerInfo Channel
     cliv2.unsubscribe_server_info()
@@ -36,9 +38,10 @@ async def test_server_info_subscribe_unsubscribe(
     unsubscribe_response = await responsesv2.get_otc_response()
 
     # Assert Response
-    unsubscription = unsubscribe_response.subscription
-    assert unsubscription.channel == Channel.CHANNEL_SERVER_INFO
-    assert unsubscription.status == SubscriptionStatus.SUBSCRIPTION_STATUS_UNSUBSCRIBED
+    unsubscription = unsubscribe_response.subscription()
+    assert unsubscription is not None
+    assert unsubscription.channel == Channel.SERVER_INFO
+    assert unsubscription.status == SubscriptionStatus.UNSUBSCRIBED
 
 
 async def test_tickers_error_forbidden(
@@ -52,8 +55,9 @@ async def test_tickers_error_forbidden(
     response = await responsesv2.get_otc_response()
 
     # Assert Response
-    error = response.error
-    assert error.code == OtcErrorCode.OTC_ERROR_CODE_FORBIDDEN
+    error = response.error()
+    assert error is not None
+    assert error.code == OtcErrorCode.FORBIDDEN
     assert (
         error.message == "no permissions for product foobar or product does not exist"
     )
@@ -70,6 +74,7 @@ async def test_tickers_error_invalid_request(
     response = await responsesv2.get_otc_response()
 
     # Assert Response
-    error = response.error
-    assert error.code == OtcErrorCode.OTC_ERROR_CODE_INVALID_REQUEST
+    error = response.error()
+    assert error is not None
+    assert error.code == OtcErrorCode.INVALID_REQUEST
     assert error.message == "no products specified to subscribe to on tickers channel"

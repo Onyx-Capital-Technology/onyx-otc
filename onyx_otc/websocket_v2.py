@@ -1,33 +1,33 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
+from abc import ABC
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
-from typing import Any, Callable, TypeAlias
+from typing import Any, Callable, Self, TypeAlias
 
 from aiohttp import ClientSession, ClientWebSocketResponse, WSMsgType
-from google.protobuf.timestamp_pb2 import Timestamp
 
-from .v2.common_pb2 import Decimal, TradableSymbol
-from .v2.requests_pb2 import (
-    Auth,
+from .requests import (
+    AuthRequest,
     OrdersChannel,
+    OtcOrderRequest,
     OtcRequest,
     RfqChannel,
     ServerInfoChannel,
-    Subscribe,
+    SubscribeRequest,
     TickersChannel,
-    Unsubscribe,
+    UnsubscribeRequest,
 )
-from .v2.responses_pb2 import ChannelMessage, OtcResponse
-from .v2.types_pb2 import Exchange, Method
+from .responses import OtcChannelMessage, OtcResponse
+from .timestamp import Timestamp
 
 logger = logging.getLogger(__name__)
 
 ResponseHandler: TypeAlias = Callable[["OnyxWebsocketClientV2", OtcResponse], None]
-EventHandler: TypeAlias = Callable[["OnyxWebsocketClientV2", ChannelMessage], None]
+EventHandler: TypeAlias = Callable[["OnyxWebsocketClientV2", OtcChannelMessage], None]
 ExitHandler: TypeAlias = Callable[["OnyxWebsocketClientV2"], None]
 
 
@@ -36,7 +36,7 @@ def on_response(cli: OnyxWebsocketClientV2, response: OtcResponse) -> None:
     logger.info("Received response: %s", response)
 
 
-def on_event(cli: OnyxWebsocketClientV2, message: ChannelMessage) -> None:
+def on_event(cli: OnyxWebsocketClientV2, message: OtcChannelMessage) -> None:
     logger.info("Received event: %s", message)
 
 
@@ -45,7 +45,7 @@ def on_exit(cli: OnyxWebsocketClientV2) -> None:
 
 
 @dataclass
-class OnyxWebsocketClientV2:
+class OnyxWebsocketClientV2(ABC):
     """
     WebSocket client for the Onyx OTC API v2.
 
@@ -59,141 +59,146 @@ class OnyxWebsocketClientV2:
         on_exit: Callback for handling connection closure
     """
 
+    ws_url: str
     api_token: str = field(default_factory=lambda: os.environ.get("ONYX_API_TOKEN", ""))
-    ws_url: str = field(
-        default_factory=lambda: os.environ.get(
-            "ONYX_WS_V2_URL", "wss://ws.onyxhub.co/stream/v2/binary"
-        )
-    )
-
     on_response: ResponseHandler = field(default=on_response)
     on_event: EventHandler = field(default=on_event)
     on_exit: ExitHandler = field(default=on_exit)
+    min_reconnect_delay: float = field(default=1.0, init=False)
+    max_reconnect_delay: float = field(default=60.0, init=False)
 
-    _queue: asyncio.Queue[OtcRequest] = field(default_factory=asyncio.Queue, repr=False)
+    _queue: asyncio.Queue[bytes | str] = field(
+        default_factory=asyncio.Queue, repr=False
+    )
     _ws: ClientWebSocketResponse | None = field(default=None, init=False)
     _write_task: asyncio.Task | None = field(default=None, init=False)
     _is_running: bool = field(default=False, init=False)
-    _reconnect_delay: float = field(default=1.0, init=False)
-    _max_reconnect_delay: float = field(default=60.0, init=False)
+    _reconnect_delay: float = 0.0
+    _id_counter: int = 0
 
-    def _create_request(self, method: Method.ValueType, **kwargs: Any) -> OtcRequest:
-        """Create a new request with the current timestamp."""
-        timestamp = Timestamp()
-        timestamp.FromDatetime(datetime.now(UTC))
-        return OtcRequest(method=method, timestamp=timestamp, **kwargs)
+    @classmethod
+    def create(
+        cls,
+        *,
+        binary: bool = True,
+        ws_url: str | None = None,
+        **kwargs: Any,
+    ) -> Self:
+        """Create a client instance."""
+        ws_url_ = (
+            ws_url
+            or os.environ.get("ONYX_WS_V2_URL")
+            or "wss://ws.onyxhub.co/stream/v2/binary"
+        )
+        if ws_url_.endswith("/binary"):
+            if not binary:
+                ws_url_ = ws_url_.replace("/binary", "")
+        elif binary:
+            ws_url_ = f"{ws_url_}/binary"
+        params = {key: value for key, value in kwargs.items() if value is not None}
+        return cls(ws_url=ws_url_, **params)
 
-    async def _handle_binary_message(self, data: bytes) -> None:
-        """Handle incoming binary messages."""
-        if response := self.parse_response(data):
-            self.on_response(self, response)
-        elif message := self.parse_channel_message(data):
-            self.on_event(self, message)
+    @property
+    def is_binary(self) -> bool:
+        """Check if the client is using binary protocol."""
+        return self.ws_url.endswith("/binary")
+
+    @property
+    def is_running(self) -> bool:
+        """Check if the client is currently running."""
+        return self._is_running
+
+    def authenticate(self) -> None:
+        """Authenticate the client."""
+        if self.api_token:
+            self.send(self.request(AuthRequest(token=self.api_token)))
         else:
-            logger.warning("Unknown message type received")
-
-    def parse_response(self, data: bytes) -> OtcResponse | None:
-        """Parse binary data as OtcResponse."""
-        try:
-            response = OtcResponse.FromString(data)
-
-            if (
-                response.HasField("error")
-                or response.HasField("auth")
-                or response.HasField("subscription")
-                or response.HasField("order")
-            ):
-                return response
-            return None
-        except Exception:
-            logger.debug("Failed to parse as OtcResponse", exc_info=True)
-            return None
-
-    def parse_channel_message(self, data: bytes) -> ChannelMessage | None:
-        """Parse binary data as ChannelMessage."""
-        try:
-            message = ChannelMessage.FromString(data)
-            return message
-        except Exception:
-            logger.error("Failed to parse as ChannelMessage", exc_info=True)
-            raise
+            logger.warning("No API token provided, authentication skipped")
 
     def subscribe_server_info(self) -> None:
         """Subscribe to server info channel."""
-        self.send(
-            self._create_request(
-                method=Method.METHOD_SUBSCRIBE,
-                subscribe=Subscribe(server_info=ServerInfoChannel()),
-            )
-        )
+        self.send(self.request(SubscribeRequest(data=ServerInfoChannel())))
 
     def unsubscribe_server_info(self) -> None:
         """Unsubscribe from server info channel."""
-        self.send(
-            self._create_request(
-                method=Method.METHOD_UNSUBSCRIBE,
-                unsubscribe=Unsubscribe(server_info=ServerInfoChannel()),
-            )
-        )
+        self.send(self.request(UnsubscribeRequest(data=ServerInfoChannel())))
 
     def subscribe_tickers(self, products: list[str]) -> None:
         """Subscribe to ticker updates for specific products."""
         self.send(
-            self._create_request(
-                method=Method.METHOD_SUBSCRIBE,
-                subscribe=Subscribe(tickers=TickersChannel(products=products)),
-            )
+            self.request(SubscribeRequest(data=TickersChannel(products=products)))
         )
 
     def unsubscribe_tickers(self, products: list[str]) -> None:
         """Unsubscribe from ticker updates for specific products."""
         self.send(
-            self._create_request(
-                method=Method.METHOD_UNSUBSCRIBE,
-                unsubscribe=Unsubscribe(tickers=TickersChannel(products=products)),
-            )
+            self.request(UnsubscribeRequest(data=TickersChannel(products=products)))
         )
 
     def subscribe_orders(self) -> None:
         """Subscribe to order updates."""
-        self.send(
-            self._create_request(
-                method=Method.METHOD_SUBSCRIBE,
-                subscribe=Subscribe(orders=OrdersChannel()),
-            )
-        )
+        self.send(self.request(SubscribeRequest(data=OrdersChannel())))
 
     def unsubscribe_orders(self) -> None:
         """Unsubscribe from order updates."""
-        self.send(
-            self._create_request(
-                method=Method.METHOD_UNSUBSCRIBE,
-                unsubscribe=Unsubscribe(orders=OrdersChannel()),
-            )
-        )
+        self.send(self.request(UnsubscribeRequest(data=OrdersChannel())))
 
-    def subscribe_rfq(
-        self, symbol: TradableSymbol, size: Decimal, exchange: Exchange.ValueType
-    ) -> None:
+    def subscribe_rfq(self, rfq: RfqChannel) -> None:
         """Subscribe to RFQ updates."""
-        self.send(
-            self._create_request(
-                method=Method.METHOD_SUBSCRIBE,
-                subscribe=Subscribe(
-                    rfq_channel=RfqChannel(symbol=symbol, size=size, exchange=exchange)
-                ),
-            )
-        )
+        self.send(self.request(SubscribeRequest(data=rfq)))
+
+    def unsubscribe_rfq(self, rfq: RfqChannel) -> None:
+        """Unsubscribe from RFQ updates."""
+        self.send(self.request(UnsubscribeRequest(data=rfq)))
+
+    async def handle_binary_message(self, data: bytes) -> None:
+        """Handle incoming binary messages."""
+        if response := OtcResponse.from_proto_bytes(data):
+            self.on_response(self, response)
+        elif message := OtcChannelMessage.from_proto_bytes(data):
+            self.on_event(self, message)
+        else:
+            logger.warning("Unknown message type received")
+
+    async def handle_text_message(self, data: str) -> None:
+        """Handle incoming text messages."""
+        payload = json.loads(data)
+        if response := OtcResponse.from_json(payload):
+            self.on_response(self, response)
+        elif message := OtcChannelMessage.from_json(payload):
+            self.on_event(self, message)
+        else:
+            logger.warning("Unknown message type received")
 
     def send(self, msg: OtcRequest) -> None:
         """Queue a message for sending."""
         if not self._is_running:
             logger.warning("Client not running, message dropped: %s", msg)
             return
-        self._queue.put_nowait(msg)
+        if self.is_binary:
+            self._queue.put_nowait(msg.to_proto().SerializeToString())
+        else:
+            self._queue.put_nowait(json.dumps(msg.to_json_dict()))
+
+    def new_id(self) -> str:
+        """Generate a new unique ID for requests."""
+        self._id_counter += 1
+        return f"wscli:{self._id_counter}"
+
+    def request(
+        self,
+        request: AuthRequest | OtcOrderRequest | SubscribeRequest | UnsubscribeRequest,
+    ) -> OtcRequest:
+        """Create a new request with the current timestamp."""
+        return OtcRequest(
+            id=self.new_id(),
+            timestamp=Timestamp.utcnow(),
+            request=request,
+        )
 
     async def connect(self) -> None:
         """Connect to the websocket server with automatic reconnection."""
+        self._reconnect_delay = self.min_reconnect_delay
         while True:
             try:
                 await self._connect_and_run()
@@ -201,7 +206,7 @@ class OnyxWebsocketClientV2:
                 logger.error("Connection error: %s", e, exc_info=True)
                 await asyncio.sleep(self._reconnect_delay)
                 self._reconnect_delay = min(
-                    self._reconnect_delay * 2, self._max_reconnect_delay
+                    self._reconnect_delay * 2, self.max_reconnect_delay
                 )
             finally:
                 self._ws = None
@@ -217,19 +222,18 @@ class OnyxWebsocketClientV2:
                 self._ws = ws
                 self._is_running = True
                 logger.info("Connected to websocket")
-
+                self._reconnect_delay = self.min_reconnect_delay
                 # Start write loop
                 self._write_task = asyncio.create_task(self._write_loop())
-
                 # Authenticate
-                if auth_msg := self._create_auth_request():
-                    self.send(auth_msg)
-
+                self.authenticate()
                 # Handle incoming messages
                 try:
                     async for msg in ws:
                         if msg.type == WSMsgType.BINARY:
-                            await self._handle_binary_message(msg.data)
+                            await self.handle_binary_message(msg.data)
+                        elif msg.type == WSMsgType.TEXT:
+                            await self.handle_text_message(msg.data)
                         elif msg.type in (
                             WSMsgType.CLOSED,
                             WSMsgType.CLOSE,
@@ -241,22 +245,17 @@ class OnyxWebsocketClientV2:
                     self._is_running = False
                     self.on_exit(self)
 
-    def _create_auth_request(self) -> OtcRequest | None:
-        """Create authentication request if token is available."""
-        if self.api_token:
-            return self._create_request(
-                method=Method.METHOD_AUTH, auth=Auth(token=self.api_token)
-            )
-        return None
-
     async def _write_loop(self) -> None:
         """Handle outgoing messages."""
         while True:
             try:
                 msg = await self._queue.get()
                 if self._ws and not self._ws.closed:
-                    logger.debug("Sending message: %s", msg)
-                    await self._ws.send_bytes(msg.SerializeToString())
+                    if isinstance(msg, str):
+                        logger.debug("Sending message string: %s", msg)
+                        await self._ws.send_str(msg)
+                    elif isinstance(msg, bytes):
+                        await self._ws.send_bytes(msg)
                 else:
                     logger.warning("WebSocket closed, message dropped: %s", msg)
             except asyncio.CancelledError:

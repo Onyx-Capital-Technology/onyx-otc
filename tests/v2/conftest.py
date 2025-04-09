@@ -12,11 +12,12 @@ def responsesv2() -> OnResponseV2:
     return OnResponseV2()
 
 
-@pytest.fixture
-async def cliv2(responsesv2: OnResponseV2):
-    cli = OnyxWebsocketClientV2(
+@pytest.fixture(params=[True, False])
+async def cliv2(request, responsesv2: OnResponseV2):
+    cli = OnyxWebsocketClientV2.create(
         on_response=responsesv2.on_response,
         on_event=responsesv2.on_event,
+        binary=request,
     )
     assert cli.api_token
     read_task = asyncio.create_task(cli.connect())

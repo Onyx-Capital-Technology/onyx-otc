@@ -13,31 +13,35 @@
 
 The websocket API v2 support both JSON and protobuf (binary) encoding. The protobuf encoding is more efficient and faster than JSON encoding.
 
+Install the library via pip:
+
+```bash
+pip install onyx-otc
+```
+
+To install the library with command line support
+
+```bash
+pip install onyx-otc[cli]
+```
+
 
 ## Example
 
-The examples directory contains a simple example of how to use the websocket API v2.
-
-To use the example, first install the all packages via
+Install the library with command line support and run the client:
 
 ```bash
-make install-all
-```
-
-Then run the example with the following command:
-
-```bash
-python examples/wsv2.py --help
+onyx --help
 ```
 
 Stream tickers for a list of product symbols.
 
 ```bash
-python examples/wsv2.py -t ebob -t brt
+onyx stream -t ebob -t brt
 ```
 
 Stream tradable quotes for a list of contract symbols.
 
 ```bash
-python examples/wsv2.py -r brtm25@ice -r ebobm25@ice
+onyx stream -r brtm25@ice -r ebobm25@ice
 ```

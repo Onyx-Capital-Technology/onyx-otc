@@ -3,7 +3,7 @@ set -e
 
 BLACK_ARG="--check"
 RUFF_ARG=""
-CODE="onyx_otc tests examples"
+CODE="onyx_otc tests"
 
 if [ "$1" = "fix" ] ; then
     BLACK_ARG=""
