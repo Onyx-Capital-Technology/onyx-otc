@@ -48,7 +48,9 @@ class Workflow:
             logger.info("Order: %s", order)
         elif server_info := message.server_info():
             delta = timedelta(seconds=int(0.001 * server_info.age_millis))
-            logger.info("Server info: socket_uid: %s, age: %s", server_info.socket_uid, delta)
+            logger.info(
+                "Server info: socket_uid: %s, age: %s", server_info.socket_uid, delta
+            )
         elif tickers := message.tickers():
             for ticker in tickers.tickers:
                 symbol = ticker.symbol

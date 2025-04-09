@@ -3,7 +3,7 @@ from __future__ import annotations
 import enum
 from datetime import datetime, timezone
 from decimal import Decimal
-from typing import Self
+from typing import Any, Self
 
 from pydantic import BaseModel
 
@@ -315,6 +315,11 @@ class SubscribeRequestBase(BaseModel):
     def channel(self) -> Channel:
         return channel_from_data_type[type(self.data)]
 
+    def model_dump(self, **kwargs: Any) -> dict:
+        data = super().model_dump(**kwargs)
+        data["channel"] = self.channel.value
+        return data
+
 
 class SubscribeRequest(SubscribeRequestBase):
     """Request for subscribing to a channel."""
@@ -339,6 +344,8 @@ request_method_from_data_type = {
 
 
 class OtcRequest(BaseModel):
+    """A request to the websocket API."""
+
     id: str
     timestamp: Timestamp
     request: AuthRequest | OtcOrderRequest | SubscribeRequest | UnsubscribeRequest
@@ -360,7 +367,7 @@ class OtcRequest(BaseModel):
         return dict(
             id=self.id,
             method=self.method.value,
-            timestamp=self.timestamp.millis,
+            timestamp=self.timestamp.to_datetime().isoformat(),
             **self.request.model_dump(),
         )
 
@@ -582,22 +589,22 @@ class OtcResponse(BaseModel):
         if id_ is None:
             return None
         method = payload["method"]
-        timestamp = Timestamp.from_millis(payload["timestamp"])
+        timestamp = Timestamp.from_iso_string(payload["timestamp"])
         match method:
             case "auth":
                 return cls(
                     id=id_, timestamp=timestamp, data=Auth(message=payload["message"])
                 )
-            case "error":
+            case "otcerror":
                 return cls(
                     id=id_,
                     timestamp=timestamp,
                     data=OtcError(
                         message=payload["message"],
-                        code=OtcErrorCode[payload["code"]],
+                        code=OtcErrorCode[payload["code"].upper()],
                     ),
                 )
-            case "subscription" | "unsubscription":
+            case "subscribe" | "unsubscribe":
                 return cls(
                     id=id_,
                     timestamp=timestamp,
@@ -695,16 +702,14 @@ class OtcChannelMessage(BaseModel):
         channel = getattr(Channel, (data.get("channel") or "").upper(), None)
         if channel is None:
             return None
-        timestamp = Timestamp.from_millis(data["timestamp"])
+        timestamp = Timestamp.from_iso_string(data["timestamp"])
+        message = data["message"]
         match channel:
             case Channel.SERVER_INFO:
                 return OtcChannelMessage(
                     channel=channel,
                     timestamp=timestamp,
-                    data=ServerInfo(
-                        socket_uid=data["socket_uid"],
-                        age_millis=data["age_millis"],
-                    ),
+                    data=ServerInfo(**message),
                 )
             case Channel.TICKERS:
                 return OtcChannelMessage(
@@ -718,7 +723,7 @@ class OtcChannelMessage(BaseModel):
                                 timestamp=Timestamp.from_millis(ticker["timestamp"]),
                                 mid=Decimal(ticker["mid"]),
                             )
-                            for ticker in data["tickers"]
+                            for ticker in message["tickers"]
                         ]
                     ),
                 )
