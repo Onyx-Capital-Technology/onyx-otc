@@ -125,8 +125,3 @@ def stream(
         asyncio.run(run_client_websocket(workflow, binary=not json, token=token))
     except KeyboardInterrupt:
         pass
-
-
-if __name__ == "__main__":
-    stream()
-#

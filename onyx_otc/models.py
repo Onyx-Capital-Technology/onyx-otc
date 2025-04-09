@@ -316,9 +316,8 @@ class SubscribeRequestBase(BaseModel):
         return channel_from_data_type[type(self.data)]
 
     def model_dump(self, **kwargs: Any) -> dict:
-        data = super().model_dump(**kwargs)
-        data["channel"] = self.channel.value
-        return data
+        data = self.data.model_dump(**kwargs)
+        return {"channel": {self.channel.value: data}}
 
 
 class SubscribeRequest(SubscribeRequestBase):
@@ -720,10 +719,12 @@ class OtcChannelMessage(BaseModel):
                             Ticker(
                                 symbol=ticker["symbol"],
                                 product_symbol=ticker["product_symbol"],
-                                timestamp=Timestamp.from_millis(ticker["timestamp"]),
+                                timestamp=Timestamp.from_iso_string(
+                                    ticker["timestamp"]
+                                ),
                                 mid=Decimal(ticker["mid"]),
                             )
-                            for ticker in message["tickers"]
+                            for ticker in message
                         ]
                     ),
                 )
