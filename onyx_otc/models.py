@@ -272,11 +272,12 @@ class RfqChannel(BaseModel):
     exchange: Exchange
     size: Decimal = Decimal(1)
 
-    def from_str(cls, rfq: str) -> Self:
+    @classmethod
+    def from_string(cls, rfq: str) -> Self:
         bits = rfq.split("@")
         if len(bits) > 1:
             symbol = TradableSymbol.from_string(bits[0])
-            exchange = Exchange.from_proto(bits[1])
+            exchange = Exchange[bits[1].upper()]
             size = Decimal(bits[2]) if len(bits) > 2 else Decimal(1)
             return cls(symbol=symbol, exchange=exchange, size=size)
         else:
@@ -522,7 +523,7 @@ class OtcOrder(BaseModel):
 
 class OtcResponse(BaseModel):
     id: str
-    timestamp: datetime
+    timestamp: Timestamp
     data: Auth | OtcError | OtcSubscription | OtcOrder
 
     def auth(self) -> Auth | None:
@@ -552,7 +553,7 @@ class OtcResponse(BaseModel):
             if data := cls.get_data_from_proto(proto):
                 return cls(
                     id=proto.id,
-                    timestamp=Timestamp.from_proto(proto.timestamp).to_datetime(),
+                    timestamp=Timestamp.from_proto(proto.timestamp),
                     data=data,
                 )
             return None
@@ -563,7 +564,7 @@ class OtcResponse(BaseModel):
     def get_data_from_proto(
         cls, proto: responses_pb2.OtcResponse
     ) -> Auth | OtcError | OtcSubscription | OtcOrder | None:
-        match proto.WhichOneof("data"):  # type: ignore[arg-type]
+        match proto.WhichOneof("response"):  # type: ignore[arg-type]
             case "auth":
                 return Auth.from_proto(proto.auth)
             case "error":
@@ -581,7 +582,7 @@ class OtcResponse(BaseModel):
         if id_ is None:
             return None
         method = payload["method"]
-        timestamp = datetime.fromtimestamp(payload["timestamp"])
+        timestamp = Timestamp.from_millis(payload["timestamp"])
         match method:
             case "auth":
                 return cls(
@@ -626,9 +627,36 @@ class OtcResponse(BaseModel):
 
 
 class OtcChannelMessage(BaseModel):
+    """A message in a subscribed channel"""
+
     channel: Channel
     timestamp: Timestamp
-    data: ServerInfo | Tickers | OtcQuote | OrderBookTops
+    data: ServerInfo | Tickers | OtcQuote | OrderBookTops | OtcOrder
+
+    def server_info(self) -> ServerInfo | None:
+        if isinstance(self.data, ServerInfo):
+            return self.data
+        return None
+
+    def tickers(self) -> Tickers | None:
+        if isinstance(self.data, Tickers):
+            return self.data
+        return None
+
+    def order_book_tops(self) -> OrderBookTops | None:
+        if isinstance(self.data, OrderBookTops):
+            return self.data
+        return None
+
+    def otc_quote(self) -> OtcQuote | None:
+        if isinstance(self.data, OtcQuote):
+            return self.data
+        return None
+
+    def order(self) -> OtcOrder | None:
+        if isinstance(self.data, OtcOrder):
+            return self.data
+        return None
 
     @classmethod
     def from_proto_bytes(cls, proto_bytes: bytes) -> Self | None:
@@ -647,7 +675,7 @@ class OtcChannelMessage(BaseModel):
     @classmethod
     def get_data_from_proto(
         cls, proto: responses_pb2.ChannelMessage
-    ) -> ServerInfo | Tickers | OtcQuote | OrderBookTops | None:
+    ) -> ServerInfo | Tickers | OtcQuote | OrderBookTops | OtcOrder | None:
         match proto.WhichOneof("message"):  # type: ignore[arg-type]
             case "server_info":
                 return ServerInfo.from_proto(proto.server_info)
@@ -657,6 +685,8 @@ class OtcChannelMessage(BaseModel):
                 return OtcQuote.from_proto(proto.otc_quote)
             case "order_book_tops":
                 return OrderBookTops.from_proto(proto.order_book_tops)
+            case "order":
+                return OtcOrder.from_proto(proto.order)
             case _:
                 return None
 
@@ -689,6 +719,22 @@ class OtcChannelMessage(BaseModel):
                                 mid=Decimal(ticker["mid"]),
                             )
                             for ticker in data["tickers"]
+                        ]
+                    ),
+                )
+            case Channel.ORDERS:
+                return OtcChannelMessage(
+                    channel=channel,
+                    timestamp=timestamp,
+                    data=OtcOrder(**data),
+                )
+            case Channel.ORDER_BOOK_TOP:
+                return OtcChannelMessage(
+                    channel=channel,
+                    timestamp=timestamp,
+                    data=OrderBookTops(
+                        order_book_tops=[
+                            OrderBookTop(**obt) for obt in data["order_book_tops"]
                         ]
                     ),
                 )

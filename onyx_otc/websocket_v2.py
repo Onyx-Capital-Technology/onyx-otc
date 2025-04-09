@@ -93,7 +93,8 @@ class OnyxWebsocketClientV2(ABC):
         )
         if ws_url_.endswith("/binary") and not binary:
             ws_url_ = ws_url_.replace("/binary", "")
-        return cls(ws_url=ws_url_, **kwargs)
+        params = {key: value for key, value in kwargs.items() if value is not None}
+        return cls(ws_url=ws_url_, **params)
 
     @property
     def is_binary(self) -> bool:
