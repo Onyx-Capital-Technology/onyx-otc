@@ -1,374 +1,14 @@
 from __future__ import annotations
 
-import enum
-from datetime import datetime, timezone
 from decimal import Decimal
-from typing import Any, Self
+from typing import Self
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
+from .common import PriceAmount, TradableSymbol
 from .timestamp import Timestamp
-from .v2 import common_pb2, requests_pb2, responses_pb2, types_pb2
-
-
-class Exchange(enum.StrEnum):
-    UNSPECIFIED = enum.auto()
-    ICE = enum.auto()
-    CME = enum.auto()
-
-    @classmethod
-    def from_proto(cls, proto: types_pb2.Exchange.ValueType) -> Self:
-        return cls[types_pb2.Exchange.Name(proto)[9:]]
-
-    def to_proto(self) -> types_pb2.Exchange.ValueType:
-        return getattr(types_pb2.Exchange, f"EXCHANGE_{self.name}")
-
-
-class Method(enum.StrEnum):
-    UNSPECIFIED = enum.auto()
-    AUTH = enum.auto()
-    ORDER = enum.auto()
-    SUBSCRIBE = enum.auto()
-    UNSUBSCRIBE = enum.auto()
-
-    @classmethod
-    def from_proto(cls, proto: types_pb2.Method.ValueType) -> Self:
-        return cls[types_pb2.Method.Name(proto)[7:]]
-
-    def to_proto(self) -> types_pb2.Method.ValueType:
-        return getattr(types_pb2.Method, f"METHOD_{self.name}")
-
-
-class Channel(enum.StrEnum):
-    UNSPECIFIED = enum.auto()
-    SERVER_INFO = enum.auto()
-    TICKERS = enum.auto()
-    ORDERS = enum.auto()
-    ORDER_BOOK_TOP = enum.auto()
-    RFQ = enum.auto()
-
-    @classmethod
-    def from_proto(cls, proto: types_pb2.Channel.ValueType) -> Self:
-        return cls[types_pb2.Channel.Name(proto)[8:]]
-
-    def to_proto(self) -> types_pb2.Channel.ValueType:
-        return getattr(types_pb2.Channel, f"CHANNEL_{self.name}")
-
-
-class OrderType(enum.StrEnum):
-    UNSPECIFIED = enum.auto()
-    FILL_OR_KILL = enum.auto()
-
-    @classmethod
-    def from_proto(cls, proto: types_pb2.OrderType.ValueType) -> Self:
-        return cls[types_pb2.OrderType.Name(proto)[11:]]
-
-    def to_proto(self) -> types_pb2.OrderType.ValueType:
-        return getattr(types_pb2.OrderType, f"ORDER_TYPE_{self.name}")
-
-
-class Side(enum.StrEnum):
-    UNSPECIFIED = enum.auto()
-    BUY = enum.auto()
-    SELL = enum.auto()
-
-    @classmethod
-    def from_proto(cls, proto: types_pb2.Side.ValueType) -> Self:
-        return cls[types_pb2.Side.Name(proto)[5:]]
-
-    def to_proto(self) -> types_pb2.Side.ValueType:
-        return getattr(types_pb2.Side, f"SIDE_{self.name}")
-
-
-class SubscriptionStatus(enum.StrEnum):
-    UNSPECIFIED = enum.auto()
-    SUBSCRIBED = enum.auto()
-    UNSUBSCRIBED = enum.auto()
-
-    @classmethod
-    def from_proto(cls, proto: types_pb2.SubscriptionStatus.ValueType) -> Self:
-        return cls[types_pb2.SubscriptionStatus.Name(proto)[20:]]
-
-    def to_proto(self) -> types_pb2.SubscriptionStatus.ValueType:
-        return getattr(types_pb2.SubscriptionStatus, f"SUBSCRIPTION_STATUS_{self.name}")
-
-
-class OtcErrorCode(enum.StrEnum):
-    UNSPECIFIED = enum.auto()
-    INVALID_REQUEST = enum.auto()
-    NOT_IMPLEMENTED = enum.auto()
-    UNAUTHENTICATED = enum.auto()
-    TOO_MANY_REQUESTS = enum.auto()
-    NOT_SUBSCRIBED = enum.auto()
-    FORBIDDEN = enum.auto()
-    INTERNAL_SERVER_ERROR = enum.auto()
-
-    @classmethod
-    def from_proto(cls, proto: types_pb2.OtcErrorCode.ValueType) -> Self:
-        return cls[types_pb2.OtcErrorCode.Name(proto)[13:]]
-
-    def to_proto(self) -> types_pb2.OtcErrorCode.ValueType:
-        return getattr(types_pb2.OtcErrorCode, f"OTC_ERROR_CODE_{self.name}")
-
-
-class Spread(BaseModel):
-    front: str
-    back: str
-
-    def to_string(self) -> str:
-        return f"{self.front}-{self.back}"
-
-
-class Butterfly(BaseModel):
-    front: str
-    middle: str
-    back: str
-
-    def to_string(self) -> str:
-        return f"{self.front}-{self.middle}-{self.back}"
-
-
-class PriceAmount(BaseModel):
-    price: Decimal
-    amount: Decimal
-
-    @classmethod
-    def from_proto(
-        cls, proto: responses_pb2.PriceAmount | responses_pb2.OtcQuoteSide
-    ) -> Self:
-        return cls(
-            price=Decimal(proto.price.value),
-            amount=Decimal(proto.amount.value),
-        )
-
-    def as_string(self) -> str:
-        return f"{self.amount}@{self.price}"
-
-
-class TradableSymbol(BaseModel):
-    symbol: str | Spread | Butterfly
-
-    @classmethod
-    def from_string(cls, symbol: str) -> Self:
-        if "-" in symbol:
-            parts = symbol.split("-")
-            if len(parts) == 2:
-                return cls(symbol=Spread(front=parts[0], back=parts[1]))
-            if len(parts) == 3:
-                return cls(
-                    symbol=Butterfly(front=parts[0], middle=parts[1], back=parts[2])
-                )
-        return cls(symbol=symbol)
-
-    @classmethod
-    def from_proto(cls, proto: common_pb2.TradableSymbol) -> Self:
-        match proto.WhichOneof("symbol"):
-            case "flat":
-                return cls(symbol=proto.flat)
-            case "spread":
-                return cls(
-                    symbol=Spread(front=proto.spread.front, back=proto.spread.back)
-                )
-            case "butterfly":
-                return cls(
-                    symbol=Butterfly(
-                        front=proto.butterfly.front,
-                        middle=proto.butterfly.middle,
-                        back=proto.butterfly.back,
-                    )
-                )
-            case _:
-                raise ValueError(f"Unknown symbol type: {proto}")
-
-    def to_proto(self) -> common_pb2.TradableSymbol:
-        if isinstance(self.symbol, str):
-            return common_pb2.TradableSymbol(flat=self.symbol)
-        elif isinstance(self.symbol, Spread):
-            return common_pb2.TradableSymbol(
-                spread=common_pb2.Spread(front=self.symbol.front, back=self.symbol.back)
-            )
-        elif isinstance(self.symbol, Butterfly):
-            return common_pb2.TradableSymbol(
-                butterfly=common_pb2.Butterfly(
-                    front=self.symbol.front,
-                    middle=self.symbol.middle,
-                    back=self.symbol.back,
-                )
-            )
-        raise ValueError(f"Unknown symbol type: {self.symbol}")
-
-    def as_string(self) -> str:
-        if isinstance(self.symbol, str):
-            return self.symbol
-        return self.symbol.to_string()
-
-
-class AuthRequest(BaseModel):
-    """Request for authentication."""
-
-    token: str
-
-    def to_proto(self) -> requests_pb2.Auth:
-        return requests_pb2.Auth(token=self.token)
-
-
-class OtcOrderRequest(BaseModel):
-    """Request for placing an order."""
-
-    account_id: str
-    symbol: TradableSymbol
-    quantity: Decimal
-    side: Side
-    price: Decimal
-    order_type: OrderType = OrderType.FILL_OR_KILL
-    client_order_id: str = ""
-
-    def to_proto(self) -> requests_pb2.NewOrderRequest:
-        return requests_pb2.NewOrderRequest(
-            account_id=self.account_id,
-            symbol=self.symbol.to_proto(),
-            quantity=common_pb2.Decimal(value=str(self.quantity)),
-            side=self.side.to_proto(),
-            price=common_pb2.Decimal(value=str(self.price)),
-            order_type=self.order_type.to_proto(),
-            client_order_id=self.client_order_id,
-        )
-
-
-class TickersChannel(BaseModel):
-    """Request for subscribing to ticker updates for a list of product symbols."""
-
-    products: list[str]
-
-    def to_proto(self) -> requests_pb2.TickersChannel:
-        return requests_pb2.TickersChannel(products=self.products)
-
-
-class OrderBookTopChannel(BaseModel):
-    """Request for subscribing to ticker updates for a list of product symbols."""
-
-    products: list[str]
-
-    def to_proto(self) -> requests_pb2.OrderBookTopChannel:
-        return requests_pb2.OrderBookTopChannel(products=self.products)
-
-
-class ServerInfoChannel(BaseModel):
-
-    def to_proto(self) -> requests_pb2.ServerInfoChannel:
-        return requests_pb2.ServerInfoChannel()
-
-
-class OrdersChannel(BaseModel):
-
-    def to_proto(self) -> requests_pb2.OrdersChannel:
-        return requests_pb2.OrdersChannel()
-
-
-class RfqChannel(BaseModel):
-    """Request for subscribing to RFQ updates for a symbol."""
-
-    symbol: TradableSymbol
-    exchange: Exchange
-    size: Decimal = Decimal(1)
-
-    @classmethod
-    def from_string(cls, rfq: str) -> Self:
-        bits = rfq.split("@")
-        if len(bits) > 1:
-            symbol = TradableSymbol.from_string(bits[0])
-            exchange = Exchange[bits[1].upper()]
-            size = Decimal(bits[2]) if len(bits) > 2 else Decimal(1)
-            return cls(symbol=symbol, exchange=exchange, size=size)
-        else:
-            raise ValueError(
-                f"Invalid RFQ format: {rfq}. Expected <symbol>@<exchange>@<size>"
-            )
-
-    def to_proto(self) -> requests_pb2.RfqChannel:
-        return requests_pb2.RfqChannel(
-            symbol=self.symbol.to_proto(),
-            size=common_pb2.Decimal(value=str(self.size)),
-            exchange=self.exchange.to_proto(),
-        )
-
-
-channel_from_data_type = {
-    ServerInfoChannel: Channel.SERVER_INFO,
-    TickersChannel: Channel.TICKERS,
-    OrdersChannel: Channel.ORDERS,
-    OrderBookTopChannel: Channel.ORDER_BOOK_TOP,
-    RfqChannel: Channel.RFQ,
-}
-
-
-class SubscribeRequestBase(BaseModel):
-    data: (
-        ServerInfoChannel
-        | TickersChannel
-        | OrdersChannel
-        | RfqChannel
-        | OrderBookTopChannel
-    )
-
-    @property
-    def channel(self) -> Channel:
-        return channel_from_data_type[type(self.data)]
-
-    def model_dump(self, **kwargs: Any) -> dict:
-        data = self.data.model_dump(**kwargs)
-        return {"channel": {self.channel.value: data}}
-
-
-class SubscribeRequest(SubscribeRequestBase):
-    """Request for subscribing to a channel."""
-
-    def to_proto(self) -> requests_pb2.Subscribe:
-        return requests_pb2.Subscribe(**{self.channel.value: self.data.to_proto()})  # type: ignore[arg-type]
-
-
-class UnsubscribeRequest(SubscribeRequestBase):
-    """Request for unsubscribing from a channel."""
-
-    def to_proto(self) -> requests_pb2.Unsubscribe:
-        return requests_pb2.Unsubscribe(**{self.channel.value: self.data.to_proto()})  # type: ignore[arg-type]
-
-
-request_method_from_data_type = {
-    AuthRequest: Method.AUTH,
-    OtcOrderRequest: Method.ORDER,
-    SubscribeRequest: Method.SUBSCRIBE,
-    UnsubscribeRequest: Method.UNSUBSCRIBE,
-}
-
-
-class OtcRequest(BaseModel):
-    """A request to the websocket API."""
-
-    id: str
-    timestamp: Timestamp
-    request: AuthRequest | OtcOrderRequest | SubscribeRequest | UnsubscribeRequest
-
-    @property
-    def method(self) -> Method:
-        return request_method_from_data_type[type(self.request)]
-
-    def to_proto(self) -> requests_pb2.OtcRequest:
-        method = self.method
-        return requests_pb2.OtcRequest(
-            id=self.id,
-            timestamp=self.timestamp.to_proto(),
-            method=method.to_proto(),
-            **{method.value: self.request.to_proto()},  # type: ignore[arg-type]
-        )
-
-    def to_json_dict(self) -> dict:
-        return dict(
-            id=self.id,
-            method=self.method.value,
-            timestamp=self.timestamp.to_datetime().isoformat(),
-            **self.request.model_dump(),
-        )
+from .types import Channel, Exchange, OtcErrorCode, Side, SubscriptionStatus
+from .v2 import responses_pb2
 
 
 class Auth(BaseModel):
@@ -477,9 +117,11 @@ class OtcError(BaseModel):
 
 
 class OtcQuote(BaseModel):
+    """An Quote from an RFQ subscription"""
+
     symbol: TradableSymbol
     exchange: Exchange
-    timestamp: datetime
+    timestamp: Timestamp
     product_symbol: str
     buy: PriceAmount
     sell: PriceAmount
@@ -489,7 +131,7 @@ class OtcQuote(BaseModel):
         return cls(
             symbol=TradableSymbol.from_proto(proto.symbol),
             exchange=Exchange.from_proto(proto.exchange),
-            timestamp=proto.timestamp.ToDatetime(timezone.utc),
+            timestamp=Timestamp.from_proto(proto.timestamp),
             product_symbol=proto.product_symbol,
             buy=PriceAmount.from_proto(proto.buy),
             sell=PriceAmount.from_proto(proto.sell),
@@ -501,6 +143,14 @@ class OtcQuote(BaseModel):
             f"buy: {self.buy.as_string()}, "
             f"sell: {self.sell.as_string()}"
         )
+
+    @field_validator("symbol", mode="before")
+    @classmethod
+    def validate_symbol(cls, value: str) -> TradableSymbol:
+        """Custom validator to create TradableSymbol from a string."""
+        if isinstance(value, str):
+            return TradableSymbol.from_string(value)
+        return value
 
 
 class OtcOrder(BaseModel):
@@ -711,28 +361,34 @@ class OtcChannelMessage(BaseModel):
                     data=ServerInfo(**message),
                 )
             case Channel.TICKERS:
+
                 return OtcChannelMessage(
                     channel=channel,
                     timestamp=timestamp,
                     data=Tickers(
                         tickers=[
                             Ticker(
-                                symbol=ticker["symbol"],
-                                product_symbol=ticker["product_symbol"],
                                 timestamp=Timestamp.from_iso_string(
-                                    ticker["timestamp"]
+                                    ticker.pop("timestamp")
                                 ),
-                                mid=Decimal(ticker["mid"]),
+                                **ticker,
                             )
                             for ticker in message
                         ]
                     ),
                 )
+            case Channel.RFQ:
+                message["timestamp"] = Timestamp.from_iso_string(message["timestamp"])
+                return OtcChannelMessage(
+                    channel=channel,
+                    timestamp=timestamp,
+                    data=OtcQuote(**message),
+                )
             case Channel.ORDERS:
                 return OtcChannelMessage(
                     channel=channel,
                     timestamp=timestamp,
-                    data=OtcOrder(**data),
+                    data=OtcOrder(**message),
                 )
             case Channel.ORDER_BOOK_TOP:
                 return OtcChannelMessage(

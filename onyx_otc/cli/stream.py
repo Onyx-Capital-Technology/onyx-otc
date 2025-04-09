@@ -6,14 +6,11 @@ from datetime import timedelta
 import click
 import dotenv
 
-from onyx_otc.models import OtcChannelMessage, OtcResponse, RfqChannel
+from onyx_otc.requests import InvalidInputError, RfqChannel
+from onyx_otc.responses import OtcChannelMessage, OtcResponse
 from onyx_otc.websocket_v2 import OnyxWebsocketClientV2
 
 logger = logging.getLogger(__name__)
-
-
-class InvalidInputError(ValueError):
-    pass
 
 
 @dataclass

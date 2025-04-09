@@ -10,19 +10,18 @@ from typing import Any, Callable, Self, TypeAlias
 
 from aiohttp import ClientSession, ClientWebSocketResponse, WSMsgType
 
-from .models import (
+from .requests import (
     AuthRequest,
     OrdersChannel,
-    OtcChannelMessage,
     OtcOrderRequest,
     OtcRequest,
-    OtcResponse,
     RfqChannel,
     ServerInfoChannel,
     SubscribeRequest,
     TickersChannel,
     UnsubscribeRequest,
 )
+from .responses import OtcChannelMessage, OtcResponse
 from .timestamp import Timestamp
 
 logger = logging.getLogger(__name__)
@@ -91,8 +90,11 @@ class OnyxWebsocketClientV2(ABC):
             or os.environ.get("ONYX_WS_V2_URL")
             or "wss://ws.onyxhub.co/stream/v2/binary"
         )
-        if ws_url_.endswith("/binary") and not binary:
-            ws_url_ = ws_url_.replace("/binary", "")
+        if ws_url_.endswith("/binary"):
+            if not binary:
+                ws_url_ = ws_url_.replace("/binary", "")
+        elif binary:
+            ws_url_ = f"{ws_url_}/binary"
         params = {key: value for key, value in kwargs.items() if value is not None}
         return cls(ws_url=ws_url_, **params)
 
