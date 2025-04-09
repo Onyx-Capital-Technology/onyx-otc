@@ -18,7 +18,7 @@ class Exchange(enum.StrEnum):
 
     @classmethod
     def from_proto(cls, proto: types_pb2.Exchange.ValueType) -> Self:
-        return cls[types_pb2.Exchange.Name(proto)[8:]]
+        return cls[types_pb2.Exchange.Name(proto)[9:]]
 
     def to_proto(self) -> types_pb2.Exchange.ValueType:
         return getattr(types_pb2.Exchange, f"EXCHANGE_{self.name}")
@@ -49,7 +49,7 @@ class Channel(enum.StrEnum):
 
     @classmethod
     def from_proto(cls, proto: types_pb2.Channel.ValueType) -> Self:
-        return cls[types_pb2.Channel.Name(proto)[7:]]
+        return cls[types_pb2.Channel.Name(proto)[8:]]
 
     def to_proto(self) -> types_pb2.Channel.ValueType:
         return getattr(types_pb2.Channel, f"CHANNEL_{self.name}")
@@ -87,7 +87,7 @@ class SubscriptionStatus(enum.StrEnum):
 
     @classmethod
     def from_proto(cls, proto: types_pb2.SubscriptionStatus.ValueType) -> Self:
-        return cls[types_pb2.SubscriptionStatus.Name(proto)[12:]]
+        return cls[types_pb2.SubscriptionStatus.Name(proto)[20:]]
 
     def to_proto(self) -> types_pb2.SubscriptionStatus.ValueType:
         return getattr(types_pb2.SubscriptionStatus, f"SUBSCRIPTION_STATUS_{self.name}")
@@ -550,15 +550,15 @@ class OtcResponse(BaseModel):
     def from_proto_bytes(cls, proto_bytes: bytes) -> Self | None:
         try:
             proto = responses_pb2.OtcResponse.FromString(proto_bytes)
-            if data := cls.get_data_from_proto(proto):
-                return cls(
-                    id=proto.id,
-                    timestamp=Timestamp.from_proto(proto.timestamp),
-                    data=data,
-                )
-            return None
         except Exception:
             return None
+        if data := cls.get_data_from_proto(proto):
+            return cls(
+                id=proto.id,
+                timestamp=Timestamp.from_proto(proto.timestamp),
+                data=data,
+            )
+        return None
 
     @classmethod
     def get_data_from_proto(
