@@ -6,7 +6,13 @@ from typing import Self
 from .v2 import types_pb2
 
 
-class Exchange(enum.StrEnum):
+class ProtoEnum(enum.StrEnum):
+
+    def __repr__(self) -> str:
+        return self.value
+
+
+class Exchange(ProtoEnum):
     UNSPECIFIED = enum.auto()
     ICE = enum.auto()
     CME = enum.auto()
@@ -18,8 +24,11 @@ class Exchange(enum.StrEnum):
     def to_proto(self) -> types_pb2.Exchange.ValueType:
         return getattr(types_pb2.Exchange, f"EXCHANGE_{self.name}")
 
+    def __str__(self) -> str:
+        return self.value
 
-class Method(enum.StrEnum):
+
+class Method(ProtoEnum):
     UNSPECIFIED = enum.auto()
     AUTH = enum.auto()
     ORDER = enum.auto()
@@ -34,7 +43,7 @@ class Method(enum.StrEnum):
         return getattr(types_pb2.Method, f"METHOD_{self.name}")
 
 
-class Channel(enum.StrEnum):
+class Channel(ProtoEnum):
     UNSPECIFIED = enum.auto()
     SERVER_INFO = enum.auto()
     TICKERS = enum.auto()
@@ -57,7 +66,7 @@ class Channel(enum.StrEnum):
         return self.value
 
 
-class OrderType(enum.StrEnum):
+class OrderType(ProtoEnum):
     UNSPECIFIED = enum.auto()
     FILL_OR_KILL = enum.auto()
 
@@ -69,7 +78,7 @@ class OrderType(enum.StrEnum):
         return getattr(types_pb2.OrderType, f"ORDER_TYPE_{self.name}")
 
 
-class Side(enum.StrEnum):
+class Side(ProtoEnum):
     UNSPECIFIED = enum.auto()
     BUY = enum.auto()
     SELL = enum.auto()
@@ -82,7 +91,7 @@ class Side(enum.StrEnum):
         return getattr(types_pb2.Side, f"SIDE_{self.name}")
 
 
-class SubscriptionStatus(enum.StrEnum):
+class SubscriptionStatus(ProtoEnum):
     UNSPECIFIED = enum.auto()
     SUBSCRIBED = enum.auto()
     UNSUBSCRIBED = enum.auto()
@@ -95,7 +104,7 @@ class SubscriptionStatus(enum.StrEnum):
         return getattr(types_pb2.SubscriptionStatus, f"SUBSCRIPTION_STATUS_{self.name}")
 
 
-class OtcErrorCode(enum.StrEnum):
+class OtcErrorCode(ProtoEnum):
     UNSPECIFIED = enum.auto()
     INVALID_REQUEST = enum.auto()
     NOT_IMPLEMENTED = enum.auto()

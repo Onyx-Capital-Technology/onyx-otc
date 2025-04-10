@@ -9,6 +9,8 @@ from google.protobuf import timestamp_pb2
 from pydantic import GetCoreSchemaHandler
 from pydantic_core import CoreSchema, core_schema
 
+from .utils import isoformat
+
 NANOS_PER_MICROS = 1000
 NANOS_PER_MILLIS = 1000 * NANOS_PER_MICROS
 NANOS_PER_SECOND = 1000 * NANOS_PER_MILLIS
@@ -103,3 +105,9 @@ class Timestamp(int):
 
     def to_datetime(self, tzinfo: timezone | None = timezone.utc) -> datetime:
         return datetime.fromtimestamp(self.total_seconds, tz=tzinfo)
+
+    def __repr__(self) -> str:
+        return isoformat(self.to_datetime(), timespec="milliseconds")
+
+    def __str__(self) -> str:
+        return self.__repr__()

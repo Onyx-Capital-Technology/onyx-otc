@@ -4,7 +4,6 @@ import asyncio
 import json
 import logging
 import os
-from abc import ABC
 from dataclasses import dataclass, field
 from typing import Any, Callable, Self, TypeAlias
 
@@ -45,7 +44,7 @@ def on_exit(cli: OnyxWebsocketClientV2) -> None:
 
 
 @dataclass
-class OnyxWebsocketClientV2(ABC):
+class OnyxWebsocketClientV2:
     """
     WebSocket client for the Onyx OTC API v2.
 
@@ -190,11 +189,13 @@ class OnyxWebsocketClientV2(ABC):
         request: AuthRequest | OtcOrderRequest | SubscribeRequest | UnsubscribeRequest,
     ) -> OtcRequest:
         """Create a new request with the current timestamp."""
-        return OtcRequest(
+        otc_request = OtcRequest(
             id=self.new_id(),
             timestamp=Timestamp.utcnow(),
             request=request,
         )
+        logger.debug("Request created: %s", otc_request)
+        return otc_request
 
     async def connect(self) -> None:
         """Connect to the websocket server with automatic reconnection."""
@@ -221,7 +222,7 @@ class OnyxWebsocketClientV2(ABC):
             async with session.ws_connect(self.ws_url) as ws:
                 self._ws = ws
                 self._is_running = True
-                logger.info("Connected to websocket")
+                logger.info("Connected to %s", self.ws_url)
                 self._reconnect_delay = self.min_reconnect_delay
                 # Start write loop
                 self._write_task = asyncio.create_task(self._write_loop())

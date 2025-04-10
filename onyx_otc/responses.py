@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+from datetime import timedelta
 from decimal import Decimal
 from typing import Self
 
@@ -9,6 +11,8 @@ from .common import PriceAmount, TradableSymbol
 from .timestamp import Timestamp
 from .types import Channel, Exchange, OtcErrorCode, Side, SubscriptionStatus
 from .v2 import responses_pb2
+
+logger = logging.getLogger(__name__)
 
 
 class Auth(BaseModel):
@@ -29,6 +33,10 @@ class ServerInfo(BaseModel):
             socket_uid=proto.socket_uid,
             age_millis=proto.age_millis,
         )
+
+    def __str__(self) -> str:
+        delta = timedelta(seconds=int(0.001 * self.age_millis))
+        return f"socket_uid='{self.socket_uid}' age={delta}"
 
 
 class Ticker(BaseModel):
@@ -202,6 +210,13 @@ class OtcResponse(BaseModel):
             return self.data
         return None
 
+    def log(self) -> None:
+        name = self.data.__class__.__name__
+        if self.error():
+            logger.error("%s - %s - %s", self.timestamp, name, self.data)
+        else:
+            logger.info("%s - %s - %s", self.timestamp, name, self.data)
+
     @classmethod
     def from_proto_bytes(cls, proto_bytes: bytes) -> Self | None:
         try:
@@ -313,6 +328,17 @@ class OtcChannelMessage(BaseModel):
         if isinstance(self.data, OtcOrder):
             return self.data
         return None
+
+    def log(self) -> None:
+        name = self.data.__class__.__name__
+        if tickers := self.tickers():
+            for ticker in tickers.tickers:
+                logger.info("%s - %s - %s", self.timestamp, name, ticker)
+        elif order_book_tops := self.order_book_tops():
+            for obt in order_book_tops.order_book_tops:
+                logger.info("%s - %s - %s", self.timestamp, name, obt)
+        else:
+            logger.info("%s - %s - %s", self.timestamp, name, self.data)
 
     @classmethod
     def from_proto_bytes(cls, proto_bytes: bytes) -> Self | None:

@@ -1,15 +1,26 @@
+import logging
+
 import click
 import dotenv
 
-dotenv.load_dotenv()  # isort skip
+import onyx_otc
 
-from .stream import stream  # noqa: E402
+from .stream import stream
+
+dotenv.load_dotenv()
 
 
 @click.group()
-def cli() -> None:
-    """Onyx OTC CLI."""
-    pass
+@click.version_option(onyx_otc.__version__)
+@click.option(
+    "--debug",
+    is_flag=True,
+    help="Enable debug logging",
+)
+def cli(debug: bool) -> None:
+    """Command line interface for onyx-otc."""
+    level = logging.DEBUG if debug else logging.INFO
+    logging.basicConfig(level=level, format="%(message)s")
 
 
 cli.add_command(stream)

@@ -6,7 +6,7 @@ help:
 	@echo ================================================================================
 
 
-.PHONY: build-python
+.PHONY: compile-protos
 compile-protos:		## compile protobuf python stubs
 	poetry run python -m grpc_tools.protoc \
 		--proto_path=./protos \
