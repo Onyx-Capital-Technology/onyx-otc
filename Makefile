@@ -25,7 +25,7 @@ install:		## install python packages via poetry
 
 .PHONY: install-all
 install-all:		## install python all packages via poetry
-	poetry install --all-extras --with docs
+	poetry install --all-extras
 
 .PHONY: lint-proto
 lint-proto:		## lint protobuf definitions
