@@ -30,3 +30,4 @@ async def cliv2(request, responsesv2: OnResponseV2):
             await read_task
         except asyncio.CancelledError:
             pass
+    await asyncio.sleep(1)
