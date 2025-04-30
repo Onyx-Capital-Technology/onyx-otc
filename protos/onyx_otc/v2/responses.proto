@@ -64,6 +64,9 @@ message LiveWebsocket {
   google.protobuf.Timestamp current_time = 5;
   google.protobuf.Timestamp last_message_received = 6;
   google.protobuf.Timestamp last_message_sent = 7;
+  string client_type = 8;
+  string remote_ip = 9;
+  string protocol = 10;
 }
 
 message ServerInfo {
