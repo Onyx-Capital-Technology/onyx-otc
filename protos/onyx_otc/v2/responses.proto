@@ -56,9 +56,20 @@ message Tickers {
   repeated Ticker tickers = 1;
 }
 
+message LiveWebsocket {
+  string socket_uid = 1;
+  int64 message_received = 2;
+  int64 message_sent = 3;
+  google.protobuf.Timestamp started = 4;
+  google.protobuf.Timestamp current_time = 5;
+  google.protobuf.Timestamp last_message_received = 6;
+  google.protobuf.Timestamp last_message_sent = 7;
+}
+
 message ServerInfo {
   string socket_uid = 1;
   int64 age_millis = 2;
+  repeated LiveWebsocket live_websockets = 3;
 }
 
 message OtcQuoteSide {
