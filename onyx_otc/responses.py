@@ -105,7 +105,6 @@ class OrderBookTop(BaseModel):
     symbol: str
     product_symbol: str
     timestamp: AnnotatedTimestamp
-    exchange: Exchange
 
     @classmethod
     def from_proto(cls, proto: responses_pb2.OrderBookTop) -> Self:
@@ -115,7 +114,6 @@ class OrderBookTop(BaseModel):
             symbol=proto.symbol,
             product_symbol=proto.product_symbol,
             timestamp=Timestamp.from_proto(proto.timestamp),
-            exchange=Exchange.from_proto(proto.exchange),
         )
 
 
@@ -453,11 +451,7 @@ class OtcChannelMessage(BaseModel):
                 return OtcChannelMessage(
                     channel=channel,
                     timestamp=timestamp,
-                    data=OrderBookTops(
-                        order_book_tops=[
-                            OrderBookTop(**obt) for obt in data["order_book_tops"]
-                        ]
-                    ),
+                    data=OrderBookTops(order_book_tops=message),
                 )
             case _:
                 raise ValueError(f"Unknown channel: {channel}")

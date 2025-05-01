@@ -11,6 +11,7 @@ from aiohttp import ClientSession, ClientWebSocketResponse, WSMsgType
 
 from .requests import (
     AuthRequest,
+    OrderBookTopChannel,
     OrdersChannel,
     OtcOrderRequest,
     OtcRequest,
@@ -132,6 +133,20 @@ class OnyxWebsocketClientV2:
         """Unsubscribe from ticker updates for specific products."""
         self.send(
             self.request(UnsubscribeRequest(data=TickersChannel(products=products)))
+        )
+
+    def subscribe_obt(self, products: list[str]) -> None:
+        """Subscribe to order-book-top updates for specific products."""
+        self.send(
+            self.request(SubscribeRequest(data=OrderBookTopChannel(products=products)))
+        )
+
+    def unsubscribe_obt(self, products: list[str]) -> None:
+        """Unsubscribe from order-book-top updates for specific products."""
+        self.send(
+            self.request(
+                UnsubscribeRequest(data=OrderBookTopChannel(products=products))
+            )
         )
 
     def subscribe_orders(self) -> None:
