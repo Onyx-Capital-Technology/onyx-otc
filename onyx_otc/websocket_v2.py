@@ -11,6 +11,7 @@ from aiohttp import ClientSession, ClientWebSocketResponse, WSMsgType
 
 from .requests import (
     AuthRequest,
+    OrderBookTopChannel,
     OrdersChannel,
     OtcOrderRequest,
     OtcRequest,
@@ -20,7 +21,7 @@ from .requests import (
     TickersChannel,
     UnsubscribeRequest,
 )
-from .responses import OtcChannelMessage, OtcResponse
+from .responses import OtcChannelMessage, OtcResponse, otc_response_from_proto_bytes
 from .timestamp import Timestamp
 
 logger = logging.getLogger(__name__)
@@ -134,6 +135,20 @@ class OnyxWebsocketClientV2:
             self.request(UnsubscribeRequest(data=TickersChannel(products=products)))
         )
 
+    def subscribe_obt(self, products: list[str]) -> None:
+        """Subscribe to order-book-top updates for specific products."""
+        self.send(
+            self.request(SubscribeRequest(data=OrderBookTopChannel(products=products)))
+        )
+
+    def unsubscribe_obt(self, products: list[str]) -> None:
+        """Unsubscribe from order-book-top updates for specific products."""
+        self.send(
+            self.request(
+                UnsubscribeRequest(data=OrderBookTopChannel(products=products))
+            )
+        )
+
     def subscribe_orders(self) -> None:
         """Subscribe to order updates."""
         self.send(self.request(SubscribeRequest(data=OrdersChannel())))
@@ -152,12 +167,11 @@ class OnyxWebsocketClientV2:
 
     async def handle_binary_message(self, data: bytes) -> None:
         """Handle incoming binary messages."""
-        if response := OtcResponse.from_proto_bytes(data):
+        response = otc_response_from_proto_bytes(data)
+        if isinstance(response, OtcResponse):
             self.on_response(self, response)
-        elif message := OtcChannelMessage.from_proto_bytes(data):
-            self.on_event(self, message)
-        else:
-            logger.warning("Unknown message type received")
+        elif isinstance(response, OtcChannelMessage):
+            self.on_event(self, response)
 
     async def handle_text_message(self, data: str) -> None:
         """Handle incoming text messages."""
@@ -167,7 +181,7 @@ class OnyxWebsocketClientV2:
         elif message := OtcChannelMessage.from_json(payload):
             self.on_event(self, message)
         else:
-            logger.warning("Unknown message type received")
+            logger.warning("Unknown JSON message type received")
 
     def send(self, msg: OtcRequest) -> None:
         """Queue a message for sending."""

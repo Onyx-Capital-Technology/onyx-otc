@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 class Workflow:
     server_info: bool = False
     tickers: list[str] = field(default_factory=list)
+    obt: list[str] = field(default_factory=list)
     rfqs: list[RfqChannel] = field(default_factory=list)
 
     def on_response(self, cli: OnyxWebsocketClientV2, response: OtcResponse) -> None:
@@ -26,6 +27,8 @@ class Workflow:
                 cli.subscribe_server_info()
             if self.tickers:
                 cli.subscribe_tickers(self.tickers)
+            if self.obt:
+                cli.subscribe_obt(self.obt)
             for rfq in self.rfqs:
                 cli.subscribe_rfq(rfq)
 
@@ -57,6 +60,12 @@ async def run_client_websocket(
     help="Product symbols to subscribe to tickers channel",
 )
 @click.option(
+    "--obt",
+    "-o",
+    multiple=True,
+    help="Product symbols to subscribe to order-book-top channel",
+)
+@click.option(
     "--server-info",
     "-s",
     is_flag=True,
@@ -78,6 +87,7 @@ async def run_client_websocket(
 @common.url_option
 def stream(
     tickers: list[str],
+    obt: list[str],
     server_info: bool,
     rfq: list[str],
     json: bool,
@@ -89,6 +99,7 @@ def stream(
         workflow = Workflow(
             server_info=server_info,
             tickers=tickers,
+            obt=obt,
             rfqs=[RfqChannel.from_string(r) for r in rfq],
         )
     except InvalidInputError as e:

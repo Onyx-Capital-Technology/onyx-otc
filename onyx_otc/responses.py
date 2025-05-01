@@ -105,7 +105,6 @@ class OrderBookTop(BaseModel):
     symbol: str
     product_symbol: str
     timestamp: AnnotatedTimestamp
-    exchange: Exchange
 
     @classmethod
     def from_proto(cls, proto: responses_pb2.OrderBookTop) -> Self:
@@ -115,7 +114,6 @@ class OrderBookTop(BaseModel):
             symbol=proto.symbol,
             product_symbol=proto.product_symbol,
             timestamp=Timestamp.from_proto(proto.timestamp),
-            exchange=Exchange.from_proto(proto.exchange),
         )
 
 
@@ -262,23 +260,17 @@ class OtcResponse(BaseModel):
             logger.info("%s - %s - %s", self.timestamp, name, self.data)
 
     @classmethod
-    def from_proto_bytes(cls, proto_bytes: bytes) -> Self | None:
-        try:
-            proto = responses_pb2.OtcResponse.FromString(proto_bytes)
-        except Exception:
-            return None
-        if data := cls.get_data_from_proto(proto):
-            return cls(
-                id=proto.id,
-                timestamp=Timestamp.from_proto(proto.timestamp),
-                data=data,
-            )
-        return None
+    def from_proto(cls, proto: responses_pb2.OtcResponse) -> Self:
+        return cls(
+            id=proto.id,
+            timestamp=Timestamp.from_proto(proto.timestamp),
+            data=cls.get_data_from_proto(proto),
+        )
 
     @classmethod
     def get_data_from_proto(
         cls, proto: responses_pb2.OtcResponse
-    ) -> Auth | OtcError | OtcSubscription | OtcOrder | None:
+    ) -> Auth | OtcError | OtcSubscription | OtcOrder:
         match proto.WhichOneof("response"):  # type: ignore[arg-type]
             case "auth":
                 return Auth.from_proto(proto.auth)
@@ -289,7 +281,7 @@ class OtcResponse(BaseModel):
             case "order":
                 return OtcOrder.from_proto(proto.order)
             case _:
-                return None
+                raise ValueError(f"Unknown response type {proto}")
 
     @classmethod
     def from_json(cls, payload: dict) -> Self | None:
@@ -385,23 +377,17 @@ class OtcChannelMessage(BaseModel):
             logger.info("%s - %s - %s", self.timestamp, name, self.data)
 
     @classmethod
-    def from_proto_bytes(cls, proto_bytes: bytes) -> Self | None:
-        try:
-            proto = responses_pb2.ChannelMessage.FromString(proto_bytes)
-            if data := cls.get_data_from_proto(proto):
-                return cls(
-                    channel=Channel.from_proto(proto.channel),
-                    timestamp=Timestamp.from_proto(proto.timestamp),
-                    data=data,
-                )
-            return None
-        except Exception:
-            return None
+    def from_proto(cls, proto: responses_pb2.ChannelMessage) -> Self:
+        return cls(
+            channel=Channel.from_proto(proto.channel),
+            timestamp=Timestamp.from_proto(proto.timestamp),
+            data=cls.get_data_from_proto(proto),
+        )
 
     @classmethod
     def get_data_from_proto(
         cls, proto: responses_pb2.ChannelMessage
-    ) -> ServerInfo | Tickers | OtcQuote | OrderBookTops | OtcOrder | None:
+    ) -> ServerInfo | Tickers | OtcQuote | OrderBookTops | OtcOrder:
         match proto.WhichOneof("message"):  # type: ignore[arg-type]
             case "server_info":
                 return ServerInfo.from_proto(proto.server_info)
@@ -414,10 +400,10 @@ class OtcChannelMessage(BaseModel):
             case "order":
                 return OtcOrder.from_proto(proto.order)
             case _:
-                return None
+                raise ValueError(f"Unknown channel message type {proto}")
 
     @classmethod
-    def from_json(cls, data: dict) -> OtcChannelMessage | None:
+    def from_json(cls, data: dict) -> Self | None:
         channel = getattr(Channel, (data.get("channel") or "").upper(), None)
         if channel is None:
             return None
@@ -425,39 +411,48 @@ class OtcChannelMessage(BaseModel):
         message = data["message"]
         match channel:
             case Channel.SERVER_INFO:
-                return OtcChannelMessage(
+                return cls(
                     channel=channel,
                     timestamp=timestamp,
                     data=ServerInfo(**message),
                 )
             case Channel.TICKERS:
-
-                return OtcChannelMessage(
+                return cls(
                     channel=channel,
                     timestamp=timestamp,
                     data=Tickers(tickers=message),
                 )
             case Channel.RFQ:
-                return OtcChannelMessage(
+                return cls(
                     channel=channel,
                     timestamp=timestamp,
                     data=OtcQuote(**message),
                 )
             case Channel.ORDERS:
-                return OtcChannelMessage(
+                return cls(
                     channel=channel,
                     timestamp=timestamp,
                     data=OtcOrder(**message),
                 )
             case Channel.ORDER_BOOK_TOP:
-                return OtcChannelMessage(
+                return cls(
                     channel=channel,
                     timestamp=timestamp,
-                    data=OrderBookTops(
-                        order_book_tops=[
-                            OrderBookTop(**obt) for obt in data["order_book_tops"]
-                        ]
-                    ),
+                    data=OrderBookTops(order_book_tops=message),
                 )
             case _:
                 raise ValueError(f"Unknown channel: {channel}")
+
+
+def otc_response_from_proto_bytes(
+    proto_bytes: bytes,
+) -> OtcResponse | OtcChannelMessage:
+    """Convert a protobuf response to an OtcResponse object."""
+    msg = responses_pb2.OtcResponseMessage.FromString(proto_bytes)
+    match msg.WhichOneof("data"):
+        case "otc_response":
+            return OtcResponse.from_proto(msg.otc_response)
+        case "channel_message":
+            return OtcChannelMessage.from_proto(msg.channel_message)
+        case _:
+            raise ValueError("Unknown response type")
