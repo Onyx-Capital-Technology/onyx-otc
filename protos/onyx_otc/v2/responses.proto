@@ -160,3 +160,11 @@ message OtcResponse {
     OtcError error = 13;
   }
 }
+
+
+message OtcResponseMessage {
+  oneof data {
+    OtcResponse otc_response = 1;
+    ChannelMessage channel_message = 2;
+  }
+}
