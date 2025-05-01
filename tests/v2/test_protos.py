@@ -23,5 +23,17 @@ def test_json_schema() -> None:
     assert schema
     started = schema["properties"]["started"]
     assert started == dict(
-        type="string", title="Started", format="date-time", default=0
+        type="string",
+        title="Started",
+        format="date-time",
+        default="1970-01-01T00:00:00Z",
     )
+
+
+def test_serialize() -> None:
+    now = datetime.now(timezone.utc)
+    lv = LiveWebsocket(started=now)  # type: ignore[arg-type]
+    value = lv.model_dump()
+    assert value["started"] == now
+    value = lv.model_dump(mode="json")
+    assert datetime.fromisoformat(value["started"]) == now

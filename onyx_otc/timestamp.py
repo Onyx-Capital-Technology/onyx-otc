@@ -50,7 +50,14 @@ class Timestamp(int):
     def __get_pydantic_core_schema__(
         cls, source_type: Any, handler: GetCoreSchemaHandler
     ) -> CoreSchema:
-        return core_schema.no_info_after_validator_function(cls, handler(int))
+        return core_schema.no_info_after_validator_function(
+            cls,
+            handler(int),
+            serialization=core_schema.plain_serializer_function_ser_schema(
+                lambda value: value.to_datetime(),
+                info_arg=False,
+            ),
+        )
 
     @classmethod
     def __get_pydantic_json_schema__(
