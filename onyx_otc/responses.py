@@ -3,16 +3,17 @@ from __future__ import annotations
 import logging
 from datetime import timedelta
 from decimal import Decimal
-from typing import Self
+from typing import Annotated, Self
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, BeforeValidator, Field, field_validator
 
 from .common import PriceAmount, TradableSymbol
-from .timestamp import Timestamp
+from .timestamp import NANOS_PER_MICROS, Timestamp
 from .types import Channel, Exchange, OtcErrorCode, Side, SubscriptionStatus
 from .v2 import responses_pb2
 
 logger = logging.getLogger(__name__)
+AnnotatedTimestamp = Annotated[Timestamp, BeforeValidator(Timestamp.from_any)]
 
 
 class Auth(BaseModel):
@@ -23,26 +24,69 @@ class Auth(BaseModel):
         return cls(message=proto.message)
 
 
+class LiveWebsocket(BaseModel):
+    socket_uid: str = ""
+    message_received: int = 0
+    message_sent: int = 0
+    started: AnnotatedTimestamp = Timestamp()
+    current_time: AnnotatedTimestamp = Timestamp()
+    last_message_received: AnnotatedTimestamp = Timestamp()
+    last_message_sent: AnnotatedTimestamp = Timestamp()
+    client_type: str = ""
+    remote_ip: str = ""
+    protocol: str = ""
+
+    @classmethod
+    def from_proto(cls, proto: responses_pb2.LiveWebsocket) -> Self:
+        return cls(
+            socket_uid=proto.socket_uid,
+            message_received=proto.message_received,
+            message_sent=proto.message_sent,
+            started=Timestamp.from_proto(proto.started),
+            current_time=Timestamp.from_proto(proto.current_time),
+            last_message_received=Timestamp.from_proto(proto.last_message_received),
+            last_message_sent=Timestamp.from_proto(proto.last_message_sent),
+            client_type=proto.client_type,
+            remote_ip=proto.remote_ip,
+            protocol=proto.protocol,
+        )
+
+    @property
+    def age(self) -> timedelta:
+        return timedelta(
+            microseconds=(self.current_time - self.started) // NANOS_PER_MICROS
+        )
+
+
 class ServerInfo(BaseModel):
     socket_uid: str
     age_millis: int
+    live_websockets: list[LiveWebsocket] = Field(default_factory=list)
 
     @classmethod
     def from_proto(cls, proto: responses_pb2.ServerInfo) -> Self:
         return cls(
             socket_uid=proto.socket_uid,
             age_millis=proto.age_millis,
+            live_websockets=[
+                LiveWebsocket.from_proto(live_websocket)
+                for live_websocket in proto.live_websockets
+            ],
         )
 
     def __str__(self) -> str:
         delta = timedelta(seconds=int(0.001 * self.age_millis))
-        return f"socket_uid='{self.socket_uid}' age={delta}"
+        return (
+            f"socket_uid='{self.socket_uid}' "
+            f"age={delta} "
+            f"open_sockets={len(self.live_websockets)}"
+        )
 
 
 class Ticker(BaseModel):
     symbol: str
     product_symbol: str
-    timestamp: Timestamp
+    timestamp: AnnotatedTimestamp
     mid: Decimal
 
     @classmethod
@@ -60,7 +104,7 @@ class OrderBookTop(BaseModel):
     sell: PriceAmount
     symbol: str
     product_symbol: str
-    timestamp: Timestamp
+    timestamp: AnnotatedTimestamp
     exchange: Exchange
 
     @classmethod
@@ -129,7 +173,7 @@ class OtcQuote(BaseModel):
 
     symbol: TradableSymbol
     exchange: Exchange
-    timestamp: Timestamp
+    timestamp: AnnotatedTimestamp
     product_symbol: str
     buy: PriceAmount
     sell: PriceAmount
@@ -187,7 +231,7 @@ class OtcOrder(BaseModel):
 
 class OtcResponse(BaseModel):
     id: str
-    timestamp: Timestamp
+    timestamp: AnnotatedTimestamp
     data: Auth | OtcError | OtcSubscription | OtcOrder
 
     def auth(self) -> Auth | None:
@@ -253,7 +297,7 @@ class OtcResponse(BaseModel):
         if id_ is None:
             return None
         method = payload["method"]
-        timestamp = Timestamp.from_iso_string(payload["timestamp"])
+        timestamp = payload["timestamp"]
         match method:
             case "auth":
                 return cls(
@@ -301,7 +345,7 @@ class OtcChannelMessage(BaseModel):
     """A message in a subscribed channel"""
 
     channel: Channel
-    timestamp: Timestamp
+    timestamp: AnnotatedTimestamp
     data: ServerInfo | Tickers | OtcQuote | OrderBookTops | OtcOrder
 
     def server_info(self) -> ServerInfo | None:
@@ -377,7 +421,7 @@ class OtcChannelMessage(BaseModel):
         channel = getattr(Channel, (data.get("channel") or "").upper(), None)
         if channel is None:
             return None
-        timestamp = Timestamp.from_iso_string(data["timestamp"])
+        timestamp = data["timestamp"]
         message = data["message"]
         match channel:
             case Channel.SERVER_INFO:
@@ -391,20 +435,9 @@ class OtcChannelMessage(BaseModel):
                 return OtcChannelMessage(
                     channel=channel,
                     timestamp=timestamp,
-                    data=Tickers(
-                        tickers=[
-                            Ticker(
-                                timestamp=Timestamp.from_iso_string(
-                                    ticker.pop("timestamp")
-                                ),
-                                **ticker,
-                            )
-                            for ticker in message
-                        ]
-                    ),
+                    data=Tickers(tickers=message),
                 )
             case Channel.RFQ:
-                message["timestamp"] = Timestamp.from_iso_string(message["timestamp"])
                 return OtcChannelMessage(
                     channel=channel,
                     timestamp=timestamp,

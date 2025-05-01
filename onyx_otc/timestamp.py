@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import time
 from datetime import date, datetime, timezone
-from decimal import Decimal
 from typing import Any, Self
 
 from google.protobuf import timestamp_pb2
@@ -14,8 +13,6 @@ from .utils import isoformat
 NANOS_PER_MICROS = 1000
 NANOS_PER_MILLIS = 1000 * NANOS_PER_MICROS
 NANOS_PER_SECOND = 1000 * NANOS_PER_MILLIS
-ZERO = Decimal()
-ONE = Decimal(1)
 
 
 class Timestamp(int):
@@ -56,6 +53,14 @@ class Timestamp(int):
         return core_schema.no_info_after_validator_function(cls, handler(int))
 
     @classmethod
+    def __get_pydantic_json_schema__(
+        cls, core_schema: CoreSchema, handler: Any
+    ) -> dict:
+        json_schema = handler(core_schema)
+        json_schema.update(type="string", format="date-time")
+        return json_schema
+
+    @classmethod
     def utcnow(cls) -> Self:
         return cls(time.time_ns())
 
@@ -74,6 +79,16 @@ class Timestamp(int):
     @classmethod
     def from_seconds(cls, seconds: float, nanos: int = 0) -> Self:
         return cls(seconds * NANOS_PER_SECOND + nanos)
+
+    @classmethod
+    def from_any(cls, value: Any) -> Self:
+        if isinstance(value, (float, int)):
+            return cls(value)
+        elif isinstance(value, date):
+            return cls.from_datetime(value)
+        elif isinstance(value, str):
+            return cls.from_iso_string(value)
+        raise ValueError(f"Cannot convert {value} to Timestamp")
 
     @classmethod
     def from_datetime(cls, dte: date | None) -> Self:
