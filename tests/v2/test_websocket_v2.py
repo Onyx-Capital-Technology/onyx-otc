@@ -78,3 +78,40 @@ async def test_tickers_error_invalid_request(
     assert error is not None
     assert error.code == OtcErrorCode.INVALID_REQUEST
     assert error.message == "no products specified to subscribe to on tickers channel"
+
+
+async def test_tickers_ok(
+    cliv2: OnyxWebsocketClientV2, responsesv2: OnResponseV2
+) -> None:
+
+    # Setup Test
+    cliv2.subscribe_tickers(products=["ebob"])
+    # Await Response to Subscribe request
+    response = await responsesv2.get_otc_response()
+
+    # Assert Response
+    subscription = response.subscription()
+    assert subscription is not None
+    assert subscription.channel == Channel.TICKERS
+    assert subscription.status == SubscriptionStatus.SUBSCRIBED
+    assert subscription.message == "subscribed to tickers for product ebob"
+
+    # Await for ServerInfo Channel Message After Subscription
+    channel_message = await responsesv2.get_otc_event(timeout=6.0)
+
+    # Assert Channel Message
+    tickers = channel_message.tickers()
+    assert tickers is not None
+    assert channel_message.channel == Channel.TICKERS
+
+    # now unsubscribe
+    cliv2.unsubscribe_tickers(products=["ebob"])
+    # Await Response to Unsubscribe request
+    unsubscribe_response = await responsesv2.get_otc_response()
+
+    # Assert Response
+    unsubscription = unsubscribe_response.subscription()
+    assert unsubscription is not None
+    assert unsubscription.channel == Channel.TICKERS
+    assert unsubscription.status == SubscriptionStatus.UNSUBSCRIBED
+    assert unsubscription.message == "unsubscribed from ebob"

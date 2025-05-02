@@ -12,7 +12,7 @@ def responsesv2() -> OnResponseV2:
     return OnResponseV2()
 
 
-@pytest.fixture(params=[False])
+@pytest.fixture(params=[True, False])
 async def cliv2(request, responsesv2: OnResponseV2):
     cli = OnyxWebsocketClientV2.create(
         on_response=responsesv2.on_response,
