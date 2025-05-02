@@ -49,11 +49,11 @@ class OnyxWebsocketClientV2:
     """
     WebSocket client for the Onyx OTC API v2.
 
-    This clients connects to the API v2 binary WebSocket endpoint
+    This clients connects to either the JSON or the binary (protobuf) endpoint
 
     Attributes:
-        api_token: API authentication token
         ws_url: WebSocket endpoint URL
+        api_token: API authentication token
         on_response: Callback for handling responses
         on_event: Callback for handling channel events
         on_exit: Callback for handling connection closure
