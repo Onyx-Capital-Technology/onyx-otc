@@ -46,6 +46,7 @@ enum Exchange {
 enum OrderType {
   ORDER_TYPE_UNSPECIFIED = 0;
   ORDER_TYPE_FILL_OR_KILL = 1;
+  ORDER_TYPE_LIMIT = 2;
 }
 
 
