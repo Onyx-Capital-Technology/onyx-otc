@@ -19,6 +19,10 @@ message NewOrderRequest {
   optional Exchange exchange = 16;
 }
 
+message CancelOrderRequest {
+  string order_id = 1;
+}
+
 message TickersChannel {
   repeated string products = 1;
 }
@@ -69,5 +73,6 @@ message OtcRequest {
     Subscribe subscribe = 11;
     Unsubscribe unsubscribe = 12;
     NewOrderRequest order = 13;
+    CancelOrderRequest cancel_order = 14;
   }
 }

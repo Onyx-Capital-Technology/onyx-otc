@@ -149,6 +149,10 @@ message OtcError {
   OtcErrorCode code = 2;
 }
 
+message OrderCanceledResponse {
+    string order_id = 1;
+    string message = 2;
+}
 
 message OtcResponse {
   string id = 1;
@@ -156,8 +160,9 @@ message OtcResponse {
   oneof response {
     Order order = 11;
     Subscription subscription = 12;
-    AuthResponse auth = 14;
     OtcError error = 13;
+    AuthResponse auth = 14;
+    OrderCanceledResponse order_canceled = 15;   
   }
 }
 
