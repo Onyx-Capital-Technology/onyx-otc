@@ -21,6 +21,8 @@ message NewOrderRequest {
 
 message CancelOrderRequest {
   string order_id = 1;
+  // Product symbol for cache routing (optional for backwards compatibility)
+  optional string product_symbol = 2;
 }
 
 message TickersChannel {
