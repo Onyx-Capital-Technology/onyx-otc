@@ -83,8 +83,8 @@ message OtcQuoteSide {
 message OtcQuote {
   TradableSymbol symbol = 1;
   Exchange exchange = 2;
-  OtcQuoteSide buy = 3;
-  OtcQuoteSide sell = 4;
+  optional OtcQuoteSide buy = 3;
+  optional OtcQuoteSide sell = 4;
   Decimal mid =  5;
   google.protobuf.Timestamp timestamp = 6;
   string product_symbol = 7;
