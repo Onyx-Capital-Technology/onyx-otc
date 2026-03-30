@@ -37,6 +37,10 @@ message OrderBookTopChannel {
   repeated string products = 1;
 }
 
+message OrderBookChannel {
+  repeated string products = 1;
+}
+
 message ServerInfoChannel {}
 message OrdersChannel {}
 
@@ -51,6 +55,7 @@ message Subscribe {
     TickersChannel tickers = 3;
     RfqChannel rfq_channel = 4;
     OrderBookTopChannel order_book_top = 5;
+    OrderBookChannel order_book = 6;
   }
 }
 
@@ -61,6 +66,7 @@ message Unsubscribe {
     TickersChannel tickers = 3;
     RfqChannel rfq_channel = 4;
     OrderBookTopChannel order_book_top = 5;
+    OrderBookChannel order_book = 6;
   }
 }
 
