@@ -38,7 +38,8 @@ message OrderBookTopChannel {
 }
 
 message OrderBookChannel {
-  repeated string products = 1;
+  TradableSymbol symbol = 1;
+  optional Exchange exchange = 2;
 }
 
 message ServerInfoChannel {}
