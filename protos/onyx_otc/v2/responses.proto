@@ -135,6 +135,24 @@ message OrderBooks {
   repeated OrderBook order_books = 1;
 }
 
+message OrderBookLevel {
+  Decimal price = 1;
+  Decimal amount = 2;
+}
+
+message OrderBook {
+  repeated OrderBookLevel bids = 1;
+  repeated OrderBookLevel asks = 2;
+  Exchange exchange = 3;
+  string symbol = 4;
+  google.protobuf.Timestamp timestamp = 5;
+  string product_symbol = 6;
+}
+
+message OrderBooks {
+  repeated OrderBook order_books = 1;
+}
+
 message Order {
   string id = 1;
   string client_order_id = 2;
