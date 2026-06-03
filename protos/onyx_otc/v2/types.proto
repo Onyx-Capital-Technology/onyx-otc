@@ -89,4 +89,6 @@ enum Channel {
   CHANNEL_RFQ = 4;
   CHANNEL_ORDER_BOOK_TOP = 5;
   CHANNEL_ORDER_BOOK = 6;
+  // Dynamic-pricer cross-product differences (priced in a client-chosen unit).
+  CHANNEL_DY_TICKERS = 7;
 }
