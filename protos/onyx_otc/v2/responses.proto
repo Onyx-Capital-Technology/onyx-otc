@@ -140,6 +140,32 @@ message Order {
   repeated Execution executions = 26;
 }
 
+message NotificationTarget {
+  oneof to {
+    bool broadcast = 1;
+    string user_id = 2;
+  }
+}
+
+message Notification {
+  uint64 id = 1;
+  google.protobuf.Timestamp timestamp = 2;
+  NotificationKind kind = 3;
+  Level severity = 4;
+  NotificationTarget target = 5;
+  string title = 6;
+  string message = 7;
+  string meta = 8;
+  NotificationSource source = 9;
+  NotificationCategory category = 10;
+  bool read = 11;
+  bool active = 12;
+}
+
+message Notifications {
+  repeated Notification notifications = 1;
+}
+
 message ChannelMessage {
   Channel channel = 1;
   google.protobuf.Timestamp timestamp = 2;
@@ -150,6 +176,8 @@ message ChannelMessage {
     OtcQuote otc_quote = 11;
     OrderBookTops order_book_tops = 12;
     OrderBooks order_books = 13;
+    Notification notification = 14;
+    Notifications notifications = 15;
   }
 }
 

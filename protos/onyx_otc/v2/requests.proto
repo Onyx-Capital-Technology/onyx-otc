@@ -49,6 +49,8 @@ message Auth {
   string token = 2;
 }
 
+message NotificationsChannel {}
+
 message Subscribe {
   oneof channel {
     ServerInfoChannel server_info = 1;
@@ -57,6 +59,7 @@ message Subscribe {
     RfqChannel rfq_channel = 4;
     OrderBookTopChannel order_book_top = 5;
     OrderBookChannel order_book = 6;
+    NotificationsChannel notifications = 7;
   }
 }
 
@@ -68,6 +71,7 @@ message Unsubscribe {
     RfqChannel rfq_channel = 4;
     OrderBookTopChannel order_book_top = 5;
     OrderBookChannel order_book = 6;
+    NotificationsChannel notifications = 7;
   }
 }
 
