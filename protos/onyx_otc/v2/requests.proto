@@ -52,6 +52,7 @@ message Auth {
 message NotificationsChannel {}
 
 message Subscribe {
+  reserved 7;  // dy_ticker (#44, reverted)
   oneof channel {
     ServerInfoChannel server_info = 1;
     OrdersChannel orders = 2;
@@ -59,11 +60,12 @@ message Subscribe {
     RfqChannel rfq_channel = 4;
     OrderBookTopChannel order_book_top = 5;
     OrderBookChannel order_book = 6;
-    NotificationsChannel notifications = 7;
+    NotificationsChannel notifications = 8;
   }
 }
 
 message Unsubscribe {
+  reserved 7;  // dy_ticker (#44, reverted)
   oneof channel {
     ServerInfoChannel server_info = 1;
     OrdersChannel orders = 2;
@@ -71,7 +73,7 @@ message Unsubscribe {
     RfqChannel rfq_channel = 4;
     OrderBookTopChannel order_book_top = 5;
     OrderBookChannel order_book = 6;
-    NotificationsChannel notifications = 7;
+    NotificationsChannel notifications = 8;
   }
 }
 

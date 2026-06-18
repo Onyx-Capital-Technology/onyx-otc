@@ -169,6 +169,7 @@ message Notifications {
 message ChannelMessage {
   Channel channel = 1;
   google.protobuf.Timestamp timestamp = 2;
+  reserved 14;  // dy_tickers (#44, reverted)
   oneof message {
     Order order = 8;
     ServerInfo server_info = 9;
@@ -176,8 +177,8 @@ message ChannelMessage {
     OtcQuote otc_quote = 11;
     OrderBookTops order_book_tops = 12;
     OrderBooks order_books = 13;
-    Notification notification = 14;
-    Notifications notifications = 15;
+    Notification notification = 16;
+    Notifications notifications = 17;
   }
 }
 
