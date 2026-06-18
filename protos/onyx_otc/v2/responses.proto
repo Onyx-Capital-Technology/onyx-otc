@@ -56,20 +56,6 @@ message Tickers {
   repeated Ticker tickers = 1;
 }
 
-// A dynamic-pricer cross-product difference FV, priced in the client-chosen
-// unit (self-describing so the client knows the unit of `mid`).
-message DyTicker {
-  string symbol = 1;
-  string product_symbol = 2;
-  Decimal mid = 3;
-  string unit = 4;
-  google.protobuf.Timestamp timestamp = 5;
-}
-
-message DyTickers {
-  repeated DyTicker dy_tickers = 1;
-}
-
 message LiveWebsocket {
   string socket_uid = 1;
   int64 message_received = 2;
@@ -164,7 +150,6 @@ message ChannelMessage {
     OtcQuote otc_quote = 11;
     OrderBookTops order_book_tops = 12;
     OrderBooks order_books = 13;
-    DyTickers dy_tickers = 14;
   }
 }
 
