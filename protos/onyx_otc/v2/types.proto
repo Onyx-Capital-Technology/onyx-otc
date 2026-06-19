@@ -91,6 +91,8 @@ enum Channel {
   CHANNEL_ORDER_BOOK = 6;
   reserved 7;  // CHANNEL_DY_TICKERS (#44, reverted)
   CHANNEL_NOTIFICATIONS = 8;
+  // Dynamic-pricer cross-product differences (priced in a client-chosen unit).
+  CHANNEL_DY_TICKERS = 9;
 }
 
 enum NotificationKind {
