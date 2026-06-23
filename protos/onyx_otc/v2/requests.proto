@@ -44,9 +44,13 @@ message OrderBookChannel {
 
 // One dynamic-pricer cross-product subscription: the product-pair key plus the
 // target unit the difference should be priced in (e.g. "05brg-brtsw" + "bbl").
+// Optional cross-tenor strip start tenors (e.g. "u26"/"z26"); both empty ->
+// matched same-tenor differences (default), both set -> stepped strip.
 message DyTickerProduct {
   string key = 1;
   string unit = 2;
+  string front_tenor = 3;
+  string back_tenor = 4;
 }
 
 message DyTickerChannel {
