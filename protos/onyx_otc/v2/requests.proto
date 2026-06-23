@@ -42,6 +42,17 @@ message OrderBookChannel {
   optional Exchange exchange = 2;
 }
 
+// One dynamic-pricer cross-product subscription: the product-pair key plus the
+// target unit the difference should be priced in (e.g. "05brg-brtsw" + "bbl").
+message DyTickerProduct {
+  string key = 1;
+  string unit = 2;
+}
+
+message DyTickerChannel {
+  repeated DyTickerProduct products = 1;
+}
+
 message ServerInfoChannel {}
 message OrdersChannel {}
 
@@ -52,7 +63,6 @@ message Auth {
 message NotificationsChannel {}
 
 message Subscribe {
-  reserved 7;  // dy_ticker (#44, reverted)
   oneof channel {
     ServerInfoChannel server_info = 1;
     OrdersChannel orders = 2;
@@ -60,12 +70,12 @@ message Subscribe {
     RfqChannel rfq_channel = 4;
     OrderBookTopChannel order_book_top = 5;
     OrderBookChannel order_book = 6;
+    DyTickerChannel dy_ticker = 7;
     NotificationsChannel notifications = 8;
   }
 }
 
 message Unsubscribe {
-  reserved 7;  // dy_ticker (#44, reverted)
   oneof channel {
     ServerInfoChannel server_info = 1;
     OrdersChannel orders = 2;
@@ -73,7 +83,9 @@ message Unsubscribe {
     RfqChannel rfq_channel = 4;
     OrderBookTopChannel order_book_top = 5;
     OrderBookChannel order_book = 6;
+    DyTickerChannel dy_ticker = 7;
     NotificationsChannel notifications = 8;
+
   }
 }
 

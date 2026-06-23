@@ -89,7 +89,7 @@ enum Channel {
   CHANNEL_RFQ = 4;
   CHANNEL_ORDER_BOOK_TOP = 5;
   CHANNEL_ORDER_BOOK = 6;
-  reserved 7;  // CHANNEL_DY_TICKERS (#44, reverted)
+  CHANNEL_DY_TICKERS = 7;
   CHANNEL_NOTIFICATIONS = 8;
 }
 
