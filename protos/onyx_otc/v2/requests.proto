@@ -71,8 +71,8 @@ message Subscribe {
     RfqChannel rfq_channel = 4;
     OrderBookTopChannel order_book_top = 5;
     OrderBookChannel order_book = 6;
+    DyTickerChannel dy_ticker = 7;
     NotificationsChannel notifications = 8;
-    DyTickerChannel dy_ticker = 9;
   }
 }
 
@@ -85,8 +85,9 @@ message Unsubscribe {
     RfqChannel rfq_channel = 4;
     OrderBookTopChannel order_book_top = 5;
     OrderBookChannel order_book = 6;
+    DyTickerChannel dy_ticker = 7;
     NotificationsChannel notifications = 8;
-    DyTickerChannel dy_ticker = 9;
+
   }
 }
 
