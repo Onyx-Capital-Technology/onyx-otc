@@ -27,6 +27,10 @@ message TickersChannel {
   repeated string products = 1;
 }
 
+message ContractTickersChannel {
+  repeated string contracts = 1;
+}
+
 message RfqChannel {
   TradableSymbol symbol = 1;
   Decimal size = 2;
@@ -35,6 +39,10 @@ message RfqChannel {
 
 message OrderBookTopChannel {
   repeated string products = 1;
+}
+
+message ContractOrderBookTopChannel {
+  repeated string contracts = 1;
 }
 
 message OrderBookChannel {
@@ -76,6 +84,8 @@ message Subscribe {
     OrderBookChannel order_book = 6;
     DyTickerChannel dy_ticker = 7;
     NotificationsChannel notifications = 8;
+    ContractTickersChannel contract_tickers = 9;
+    ContractOrderBookTopChannel contract_order_book_top = 10;
   }
 }
 
@@ -89,7 +99,8 @@ message Unsubscribe {
     OrderBookChannel order_book = 6;
     DyTickerChannel dy_ticker = 7;
     NotificationsChannel notifications = 8;
-
+    ContractTickersChannel contract_tickers = 9;
+    ContractOrderBookTopChannel contract_order_book_top = 10;
   }
 }
 
