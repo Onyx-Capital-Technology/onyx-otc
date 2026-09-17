@@ -43,6 +43,7 @@ enum Exchange {
   EXCHANGE_ICE = 1;
   EXCHANGE_CME = 2;
   EXCHANGE_SGX = 3;
+  EXCHANGE_ONYX = 4;
 }
 
 

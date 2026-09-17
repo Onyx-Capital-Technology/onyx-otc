@@ -16,6 +16,7 @@ class Exchange(ProtoEnum):
     UNSPECIFIED = enum.auto()
     ICE = enum.auto()
     CME = enum.auto()
+    ONYX = enum.auto()
 
     @classmethod
     def from_proto(cls, proto: types_pb2.Exchange.ValueType) -> Self:
