@@ -44,6 +44,7 @@ enum Exchange {
   EXCHANGE_CME = 2;
   EXCHANGE_SGX = 3;
   EXCHANGE_ONYX = 4;
+  EXCHANGE_FLUX_MARKETS = 5;
 }
 
 
