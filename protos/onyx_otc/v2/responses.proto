@@ -185,10 +185,8 @@ message ManualRfqLegState {
   Side side = 2;
   Decimal lots = 3;
   ManualRfqLegStatus status = 4;
-  // Indicative only: the leg's OTC book mid when the update was built
-  optional Decimal fair_value = 5;
   // Firm leg price, set once quoted
-  optional Decimal price = 6;
+  optional Decimal price = 5;
 }
 
 message ManualRfqFirmQuote {
@@ -224,7 +222,6 @@ message ManualRfqRequestLeg {
   Decimal asked_lots = 3;
   Decimal book_lots = 4;
   ManualRfqLegStatus status = 5;
-  optional Decimal fair_value = 6;
 }
 
 message ManualRfqSentReply {
