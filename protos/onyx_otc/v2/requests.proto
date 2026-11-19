@@ -65,6 +65,40 @@ message DyTickerChannel {
   repeated DyTickerProduct products = 1;
 }
 
+message ManualRfqLeg {
+  TradableSymbol symbol = 1;
+  Side side = 2;
+  Decimal lots = 3;
+}
+
+// Subscribing opens an RFQ. Closing the socket cancels the RFQs it opened.
+message ManualRfqChannel {
+  string product_symbol = 1;
+  optional string account_id = 2;
+  repeated ManualRfqLeg legs = 3;
+}
+
+message ManualRfqCancel {
+  string rfq_id = 1;
+}
+
+// Subscribe to a channel of RFQs the user can quote.
+message ManualRfqRequestsChannel {}
+
+message ManualRfqReply {
+  string rfq_id = 1;
+  optional string account_id = 2;
+  oneof reply {
+    ManualRfqLegPrice price = 3;
+    ManualRfqPass pass = 4;
+  }
+}
+
+// Trades a firm quote as it stands: every leg at the quoted prices, or nothing
+message AcceptManualRfqQuote {
+  string quote_id = 1;
+}
+
 message ServerInfoChannel {}
 message OrdersChannel {}
 
@@ -86,6 +120,8 @@ message Subscribe {
     NotificationsChannel notifications = 8;
     ContractTickersChannel contract_tickers = 9;
     ContractOrderBookTopChannel contract_order_book_top = 10;
+    ManualRfqChannel manual_rfq = 11;
+    ManualRfqRequestsChannel manual_rfq_requests = 12;
   }
 }
 
@@ -101,6 +137,8 @@ message Unsubscribe {
     NotificationsChannel notifications = 8;
     ContractTickersChannel contract_tickers = 9;
     ContractOrderBookTopChannel contract_order_book_top = 10;
+    ManualRfqCancel manual_rfq = 11;
+    ManualRfqRequestsChannel manual_rfq_requests = 12;
   }
 }
 
@@ -114,5 +152,7 @@ message OtcRequest {
     Unsubscribe unsubscribe = 12;
     NewOrderRequest order = 13;
     CancelOrderRequest cancel_order = 14;
+    ManualRfqReply manual_rfq_reply = 15;
+    AcceptManualRfqQuote accept_manual_rfq_quote = 16;
   }
 }

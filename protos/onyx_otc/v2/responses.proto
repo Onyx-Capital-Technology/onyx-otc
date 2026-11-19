@@ -180,6 +180,79 @@ message Notifications {
   repeated Notification notifications = 1;
 }
 
+message ManualRfqLegState {
+  TradableSymbol symbol = 1;
+  Side side = 2;
+  Decimal lots = 3;
+  ManualRfqLegStatus status = 4;
+  // Indicative only: the leg's OTC book mid when the update was built
+  optional Decimal fair_value = 5;
+  // Firm leg price, set once quoted
+  optional Decimal price = 6;
+}
+
+message ManualRfqFirmQuote {
+  string quote_id = 1;
+  // Package price in leg 0's terms: legs on leg 0's side add, the others subtract
+  Decimal price = 2;
+  google.protobuf.Timestamp expires_at = 3;
+}
+
+// The client's view of their own RFQ
+message ManualRfq {
+  string rfq_id = 1;
+  string product_symbol = 2;
+  string account_id = 3;
+  repeated ManualRfqLegState legs = 4;
+  ManualRfqState state = 5;
+  ManualRfqEvent event = 6;
+  optional ManualRfqFirmQuote firm_quote = 7;
+  // Why the RFQ ended in NO_QUOTE, FAILED or CANCELLED
+  string reason = 8;
+  google.protobuf.Timestamp created_timestamp = 9;
+  google.protobuf.Timestamp collect_deadline = 10;
+  google.protobuf.Timestamp timestamp = 11;
+}
+
+message ManualRfqs {
+  repeated ManualRfq manual_rfqs = 1;
+}
+
+message ManualRfqRequestLeg {
+  TradableSymbol symbol = 1;
+  Side side = 2;
+  Decimal asked_lots = 3;
+  Decimal book_lots = 4;
+  ManualRfqLegStatus status = 5;
+  optional Decimal fair_value = 6;
+}
+
+message ManualRfqSentReply {
+  oneof reply {
+    ManualRfqLegPrice price = 1;
+    ManualRfqPass pass = 2;
+  }
+  google.protobuf.Timestamp timestamp = 3;
+}
+
+// A quoter's view of an RFQ they may price
+message ManualRfqRequest {
+  string rfq_id = 1;
+  string product_symbol = 2;
+  repeated ManualRfqRequestLeg legs = 3;
+  ManualRfqState state = 4;
+  ManualRfqEvent event = 5;
+  google.protobuf.Timestamp created_timestamp = 6;
+  google.protobuf.Timestamp collect_deadline = 7;
+  google.protobuf.Timestamp timestamp = 8;
+  // This quoter's own replies only
+  repeated ManualRfqSentReply replies = 9;
+}
+
+message ManualRfqRequests {
+  repeated ManualRfqRequest requests = 1;
+}
+
 message ChannelMessage {
   Channel channel = 1;
   google.protobuf.Timestamp timestamp = 2;
@@ -193,6 +266,8 @@ message ChannelMessage {
     DyTickers dy_tickers = 14;
     Notification notification = 16;
     Notifications notifications = 17;
+    ManualRfqs manual_rfqs = 18;
+    ManualRfqRequests manual_rfq_requests = 19;
   }
 }
 
@@ -216,6 +291,15 @@ message OrderCanceledResponse {
     string message = 2;
 }
 
+message ManualRfqReplyResponse {
+  string rfq_id = 1;
+}
+
+message ManualRfqAccepted {
+  // The client's orders in leg order
+  repeated Order orders = 1;
+}
+
 message OtcResponse {
   string id = 1;
   google.protobuf.Timestamp timestamp = 2;
@@ -224,7 +308,9 @@ message OtcResponse {
     Subscription subscription = 12;
     OtcError error = 13;
     AuthResponse auth = 14;
-    OrderCanceledResponse order_canceled = 15;   
+    OrderCanceledResponse order_canceled = 15;
+    ManualRfqReplyResponse manual_rfq_reply = 16;
+    ManualRfqAccepted manual_rfq_accepted = 17;
   }
 }
 
