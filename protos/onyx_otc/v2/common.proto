@@ -26,3 +26,13 @@ message TradableSymbol {
   }
 }
 
+// A quoter's price for all of one leg's asked lots
+message ManualRfqLegPrice {
+  TradableSymbol symbol = 1;
+  Decimal price = 2;
+  Decimal lots = 3;
+}
+
+// Declines the whole RFQ
+message ManualRfqPass {}
+
