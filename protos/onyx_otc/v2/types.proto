@@ -178,6 +178,6 @@ enum ManualRfqLegStatus {
   // The book and a reply between them fill the leg
   MANUAL_RFQ_LEG_STATUS_COVERED = 2;
   // No reply came, or the book share went before the quote
-  MANUAL_RFQ_LEG_STATUS_SHORT = 3;
+  MANUAL_RFQ_LEG_STATUS_UNAVAILABLE = 3;
   MANUAL_RFQ_LEG_STATUS_TRADED = 4;
 }
