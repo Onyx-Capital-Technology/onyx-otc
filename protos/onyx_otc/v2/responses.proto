@@ -267,8 +267,6 @@ message OptionContractLeg {
 message OptionContract {
   // Use this symbol for RFQ subscriptions
   string symbol = 1;
-  reserved 2;
-  reserved "display_symbol";
   string product_symbol = 3;
   OptionContractKind kind = 4;
   repeated OptionContractLeg legs = 5;
@@ -279,8 +277,6 @@ message OptionContract {
 
 // Set on tickers, order book tops and RFQ quotes for option symbols only
 message OptionInfo {
-  reserved 1;
-  reserved "display_symbol";
   OptionContractKind kind = 2;
   repeated OptionContractLeg legs = 3;
   google.protobuf.Timestamp expiry = 4;
