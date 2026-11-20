@@ -29,6 +29,7 @@ message Ticker {
   Decimal full_price = 4;
   Decimal accrued_price = 5;
   string product_symbol = 6;
+  OptionInfo option = 7;
 }
 
 message Fee {
@@ -102,6 +103,7 @@ message OtcQuote {
   Decimal mid =  5;
   google.protobuf.Timestamp timestamp = 6;
   string product_symbol = 7;
+  OptionInfo option = 8;
 }
 
 message OrderBookTop {
@@ -111,6 +113,7 @@ message OrderBookTop {
   string symbol = 4;
   google.protobuf.Timestamp timestamp = 5;
   string product_symbol = 6;
+  OptionInfo option = 7;
 }
 
 message OrderBookTops {
@@ -250,6 +253,41 @@ message ManualRfqRequests {
   repeated ManualRfqRequest requests = 1;
 }
 
+message OptionContractLeg {
+  string underlying = 1;
+  OptionSide side = 2;
+  Decimal strike = 3;
+  string tenor = 4;
+  google.protobuf.Timestamp expiry = 5;
+  sint32 weight = 6;
+  // Latest per-unit delta from the publisher; changes without changing the symbol
+  Decimal delta = 7;
+}
+
+message OptionContract {
+  // Use this symbol for RFQ subscriptions
+  string symbol = 1;
+  string display_symbol = 2;
+  string product_symbol = 3;
+  OptionContractKind kind = 4;
+  repeated OptionContractLeg legs = 5;
+  // Nearest leg expiry; the contract is retired after it
+  google.protobuf.Timestamp expiry = 6;
+  bool retired = 7;
+}
+
+// Set on tickers, order book tops and RFQ quotes for option symbols only
+message OptionInfo {
+  string display_symbol = 1;
+  OptionContractKind kind = 2;
+  repeated OptionContractLeg legs = 3;
+  google.protobuf.Timestamp expiry = 4;
+}
+
+message OptionContracts {
+  repeated OptionContract option_contracts = 1;
+}
+
 message ChannelMessage {
   Channel channel = 1;
   google.protobuf.Timestamp timestamp = 2;
@@ -265,6 +303,8 @@ message ChannelMessage {
     Notifications notifications = 17;
     ManualRfqs manual_rfqs = 18;
     ManualRfqRequests manual_rfq_requests = 19;
+    OptionContracts option_contracts = 20;
+    OptionContract option_contract = 21;
   }
 }
 

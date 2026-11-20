@@ -108,6 +108,12 @@ message Auth {
 
 message NotificationsChannel {}
 
+// Snapshot on subscribe, then a push on every new contract, retirement or delta change
+message OptionContractsChannel {
+  // Empty means every live option contract
+  repeated string symbols = 1;
+}
+
 message Subscribe {
   oneof channel {
     ServerInfoChannel server_info = 1;
@@ -122,6 +128,7 @@ message Subscribe {
     ContractOrderBookTopChannel contract_order_book_top = 10;
     ManualRfqChannel manual_rfq = 11;
     ManualRfqRequestsChannel manual_rfq_requests = 12;
+    OptionContractsChannel option_contracts = 13;
   }
 }
 
@@ -139,6 +146,7 @@ message Unsubscribe {
     ContractOrderBookTopChannel contract_order_book_top = 10;
     ManualRfqCancel manual_rfq = 11;
     ManualRfqRequestsChannel manual_rfq_requests = 12;
+    OptionContractsChannel option_contracts = 13;
   }
 }
 
