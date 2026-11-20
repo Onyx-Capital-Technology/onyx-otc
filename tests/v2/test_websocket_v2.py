@@ -85,7 +85,7 @@ async def test_tickers_ok(
 ) -> None:
 
     # Setup Test
-    cliv2.subscribe_tickers(products=["ebob"])
+    cliv2.subscribe_tickers(products=["dtd"])
     # Await Response to Subscribe request
     response = await responsesv2.get_otc_response()
 
@@ -94,7 +94,7 @@ async def test_tickers_ok(
     assert subscription is not None
     assert subscription.channel == Channel.TICKERS
     assert subscription.status == SubscriptionStatus.SUBSCRIBED
-    assert subscription.message == "subscribed to tickers for product ebob"
+    assert subscription.message == "subscribed to tickers for product dtd"
 
     # Await for ServerInfo Channel Message After Subscription
     channel_message = await responsesv2.get_otc_event(timeout=6.0)
@@ -105,7 +105,7 @@ async def test_tickers_ok(
     assert channel_message.channel == Channel.TICKERS
 
     # now unsubscribe
-    cliv2.unsubscribe_tickers(products=["ebob"])
+    cliv2.unsubscribe_tickers(products=["dtd"])
     # Await Response to Unsubscribe request
     unsubscribe_response = await responsesv2.get_otc_response()
 
@@ -114,4 +114,4 @@ async def test_tickers_ok(
     assert unsubscription is not None
     assert unsubscription.channel == Channel.TICKERS
     assert unsubscription.status == SubscriptionStatus.UNSUBSCRIBED
-    assert unsubscription.message == "unsubscribed from ebob"
+    assert unsubscription.message == "unsubscribed from dtd"

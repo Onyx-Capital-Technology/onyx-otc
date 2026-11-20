@@ -267,21 +267,19 @@ message OptionContractLeg {
 message OptionContract {
   // Use this symbol for RFQ subscriptions
   string symbol = 1;
-  string display_symbol = 2;
-  string product_symbol = 3;
-  OptionContractKind kind = 4;
-  repeated OptionContractLeg legs = 5;
+  string product_symbol = 2;
+  OptionContractKind kind = 3;
+  repeated OptionContractLeg legs = 4;
   // Nearest leg expiry; the contract is retired after it
-  google.protobuf.Timestamp expiry = 6;
-  bool retired = 7;
+  google.protobuf.Timestamp expiry = 5;
+  bool retired = 6;
 }
 
 // Set on tickers, order book tops and RFQ quotes for option symbols only
 message OptionInfo {
-  string display_symbol = 1;
-  OptionContractKind kind = 2;
-  repeated OptionContractLeg legs = 3;
-  google.protobuf.Timestamp expiry = 4;
+  OptionContractKind kind = 1;
+  repeated OptionContractLeg legs = 2;
+  google.protobuf.Timestamp expiry = 3;
 }
 
 message OptionContracts {
